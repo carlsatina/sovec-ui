@@ -23,7 +23,11 @@ import type {
   DriverSessionResponse,
   DriverEarningsResponse,
   SubmitRideRatingRequest,
-  UserRideHistoryResponse
+  UserRideHistoryResponse,
+  AdminDriverApplicationsResponse,
+  ApplicationStatus,
+  AdminRidesResponse,
+  FareConfig
 } from './types'
 
 export const api = {
@@ -78,5 +82,35 @@ export const api = {
   rideAddEvent: (rideId: string, type: string, metadata?: Record<string, unknown>) =>
     request<{ id: string; event: string }>(`/rides/${rideId}/events`, { method: 'POST', body: { type, metadata } }),
   rideCancel: (rideId: string) =>
-    request<{ ok: boolean }>(`/bookings/${rideId}/cancel`, { method: 'POST' })
+    request<{ ok: boolean }>(`/bookings/${rideId}/cancel`, { method: 'POST' }),
+
+  // Admin operations
+  adminGetDriverApplications: (params: { status?: string; q?: string; page?: number; limit?: number } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.q) query.set('q', params.q)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminDriverApplicationsResponse>(`/admin/driver-applications?${query.toString()}`)
+  },
+  adminUpdateDriverApplicationStatus: (id: string, status: ApplicationStatus, reason?: string) =>
+    request<{ ok: boolean; application: unknown }>(`/admin/driver-applications/${id}/status`, { method: 'POST', body: { status, reason } }),
+  adminScheduleDriverInterview: (id: string, interviewAt: string) =>
+    request<{ ok: boolean; application: unknown }>(`/admin/driver-applications/${id}/interview`, { method: 'POST', body: { interviewAt } }),
+  adminGetRides: (params: { status?: string; q?: string; page?: number; limit?: number; activeOnly?: boolean } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.q) query.set('q', params.q)
+    query.set('activeOnly', String(params.activeOnly ?? true))
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminRidesResponse>(`/admin/rides?${query.toString()}`)
+  },
+  adminForceCancelRide: (id: string, reason?: string) =>
+    request<{ ok: boolean; id: string; status: string }>(`/admin/rides/${id}/force-cancel`, { method: 'POST', body: { reason } }),
+  adminReassignRide: (id: string, payload: { reason?: string; preferredDriverId?: string }) =>
+    request<{ ok: boolean; id: string; status: string; driverId?: string | null }>(`/admin/rides/${id}/reassign`, { method: 'POST', body: payload }),
+  adminGetPricing: () => request<{ config: FareConfig }>('/admin/pricing'),
+  adminUpdatePricing: (payload: Pick<FareConfig, 'baseFare' | 'perKmRate' | 'perMinuteRate' | 'minimumFare' | 'currency'>) =>
+    request<{ ok: boolean; config: FareConfig }>('/admin/pricing', { method: 'PUT', body: payload })
 }

@@ -155,3 +155,92 @@ export type SubmitRideRatingRequest = {
 export type UserRideHistoryResponse = {
   items: RideDetails[]
 }
+
+export type ApplicationStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'INTERVIEW' | 'APPROVED' | 'REJECTED'
+
+export type AdminDriverApplicationUser = {
+  id: string
+  name: string
+  phone: string
+  email?: string | null
+  role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  createdAt: string
+}
+
+export type AdminDriverDocument = {
+  id: string
+  type: string
+  fileUrl: string
+  status: string
+  createdAt: string
+}
+
+export type AdminDriverAvailability = {
+  id: string
+  days: string
+  hours: string
+  preferredCity: string
+}
+
+export type AdminDriverApplication = {
+  id: string
+  userId: string
+  status: ApplicationStatus
+  fullName?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  experienceYears?: number | null
+  preferredArea?: string | null
+  submittedAt?: string | null
+  interviewAt?: string | null
+  notes?: string | null
+  createdAt: string
+  updatedAt: string
+  user: AdminDriverApplicationUser
+  documents: AdminDriverDocument[]
+  availability?: AdminDriverAvailability | null
+}
+
+export type AdminDriverApplicationsResponse = {
+  items: AdminDriverApplication[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type AdminRide = {
+  id: string
+  status: string
+  riderId: string
+  driverId?: string | null
+  pickupAddress: string
+  dropoffAddress: string
+  fareAmount: number
+  currency: string
+  paymentMethod: string
+  createdAt: string
+  updatedAt: string
+  rider?: { id: string; name: string; phone: string } | null
+  driver?: { id: string; name: string; phone: string } | null
+  events?: Array<{ id: string; type: string; createdAt: string }>
+}
+
+export type AdminRidesResponse = {
+  items: AdminRide[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type FareConfig = {
+  id: string
+  baseFare: number
+  perKmRate: number
+  perMinuteRate: number
+  minimumFare: number
+  currency: string
+  updatedAt: string
+}

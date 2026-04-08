@@ -48,6 +48,10 @@ const DriverReview = () => import('../pages/driver-apply/DriverReview.vue')
 const DriverSubmitted = () => import('../pages/driver-apply/DriverSubmitted.vue')
 const DriverStatus = () => import('../pages/driver-apply/DriverStatus.vue')
 const DriverFaq = () => import('../pages/driver-apply/DriverFaq.vue')
+const AdminDashboard = () => import('../pages/admin/AdminDashboard.vue')
+const AdminDriverApplications = () => import('../pages/admin/AdminDriverApplications.vue')
+const AdminTripMonitoring = () => import('../pages/admin/AdminTripMonitoring.vue')
+const AdminPricing = () => import('../pages/admin/AdminPricing.vue')
 
 const routes = [
   { path: '/', redirect: '/auth/splash' },
@@ -103,7 +107,13 @@ const routes = [
   { path: '/driver/review', component: DriverReview, meta: { showTabs: false, requiresAuth: true } },
   { path: '/driver/submitted', component: DriverSubmitted, meta: { showTabs: false, requiresAuth: true } },
   { path: '/driver/status', component: DriverStatus, meta: { showTabs: false, requiresAuth: true } },
-  { path: '/driver/faq', component: DriverFaq, meta: { showTabs: false, requiresAuth: true } }
+  { path: '/driver/faq', component: DriverFaq, meta: { showTabs: false, requiresAuth: true } },
+
+  // ── Admin app ───────────────────────────────────────────────────────────
+  { path: '/admin', component: AdminDashboard, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/driver-applications', component: AdminDriverApplications, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/trips', component: AdminTripMonitoring, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/pricing', component: AdminPricing, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
 ]
 
 const router = createRouter({
@@ -116,6 +126,29 @@ router.beforeEach((to) => {
 
   const token = localStorage.getItem('auth_token')
   if (!token) return { path: '/auth/login', query: { redirect: to.fullPath } }
+
+  const getRoleFromToken = (value: string) => {
+    try {
+      const [, payload] = value.split('.')
+      if (!payload) return null
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
+      const json = JSON.parse(atob(padded))
+      const role = String(json.role ?? '')
+      if (role === 'PASSENGER' || role === 'DRIVER' || role === 'ADMIN') return role
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  const tokenRole = getRoleFromToken(token)
+  if (to.meta.requiresAdmin && tokenRole !== 'ADMIN') {
+    return { path: '/home' }
+  }
+  if (tokenRole === 'ADMIN') {
+    return true
+  }
 
   const devRole = localStorage.getItem('solvec_dev_role') ?? 'PASSENGER'
   const isDriver = devRole === 'DRIVER'
