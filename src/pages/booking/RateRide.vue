@@ -117,7 +117,6 @@ async function submitRating() {
   submitting.value = true
   try {
     await api.submitRideRating(booking.rideId, {
-      riderId: auth.user.id,
       rating: rating.value,
       comment: comment.value.trim() || undefined,
       tags: selectedTags.value

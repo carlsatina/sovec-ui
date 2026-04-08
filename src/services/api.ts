@@ -22,7 +22,8 @@ import type {
   RideDetails,
   DriverSessionResponse,
   DriverEarningsResponse,
-  SubmitRideRatingRequest
+  SubmitRideRatingRequest,
+  UserRideHistoryResponse
 } from './types'
 
 export const api = {
@@ -30,6 +31,7 @@ export const api = {
   verifyOtp: (payload: AuthOtpVerifyRequest) => request<AuthOtpVerifyResponse>('/auth/otp/verify', { method: 'POST', body: payload }),
   register: (payload: RegisterRequest) => request<RegisterResponse>('/auth/register', { method: 'POST', body: payload }),
   me: () => request<UserProfile>('/users/me'),
+  meRides: (limit = 20) => request<UserRideHistoryResponse>(`/users/me/rides?limit=${encodeURIComponent(String(limit))}`),
   meWithToken: (token: string) => request<UserProfile>('/users/me', { headers: { Authorization: `Bearer ${token}` } }),
   estimateFare: (payload: FareEstimateRequest) => request<FareEstimateResponse>('/bookings/estimate', { method: 'POST', body: payload }),
   createBooking: (payload: CreateBookingRequest) => request<CreateBookingResponse>('/bookings', { method: 'POST', body: payload }),

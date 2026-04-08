@@ -10,6 +10,11 @@ type RequestOptions = {
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
 
+function hasHeader(headers: Record<string, string>, name: string) {
+  const target = name.toLowerCase()
+  return Object.keys(headers).some((key) => key.toLowerCase() === target)
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = localStorage.getItem('auth_token')
   const devRole = localStorage.getItem('solvec_dev_role')
@@ -18,10 +23,10 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     ...(options.headers ?? {})
   }
 
-  if (token) {
+  if (token && !hasHeader(headers, 'Authorization')) {
     headers.Authorization = `Bearer ${token}`
   }
-  if (devRole) {
+  if (devRole && !hasHeader(headers, 'X-Dev-Role')) {
     headers['X-Dev-Role'] = devRole
   }
 

@@ -147,8 +147,11 @@ export type DriverEarningsResponse = {
 }
 
 export type SubmitRideRatingRequest = {
-  riderId: string
   rating: number
   comment?: string
   tags?: string[]
+}
+
+export type UserRideHistoryResponse = {
+  items: RideDetails[]
 }
