@@ -36,8 +36,18 @@
     </div>
 
     <div class="card">
+      <div class="section-title">Fleet Management</div>
+      <p class="text-secondary">
+        Register EV vehicles, assign drivers, and control unit availability states.
+      </p>
+      <button class="button button-primary" type="button" @click="router.push('/admin/fleet')">
+        Open Fleet
+      </button>
+    </div>
+
+    <div class="card">
       <div class="section-title">Next Modules</div>
-      <p class="text-secondary">Trip Monitoring, Pricing, Payments, Fleet, and Analytics will be added in the next steps.</p>
+      <p class="text-secondary">Payments, support workflows, and analytics are next after Fleet MVP.</p>
     </div>
   </div>
 </template>

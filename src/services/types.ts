@@ -244,3 +244,61 @@ export type FareConfig = {
   currency: string
   updatedAt: string
 }
+
+export type VehicleStatus = 'AVAILABLE' | 'IN_USE' | 'CHARGING' | 'MAINTENANCE'
+
+export type AdminVehicle = {
+  id: string
+  plateNumber: string
+  model: string
+  capacity: number
+  color?: string | null
+  status: VehicleStatus
+  batteryCapacityKwh?: number | null
+  batteryLevel?: number | null
+  createdAt: string
+  updatedAt: string
+  driver?: {
+    id: string
+    name: string
+    phone: string
+    email?: string | null
+    role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  } | null
+}
+
+export type AdminVehiclesResponse = {
+  items: AdminVehicle[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type AdminAvailableDriver = {
+  id: string
+  name: string
+  phone: string
+  email?: string | null
+  role: 'DRIVER'
+  createdAt: string
+  driverLocation?: {
+    isAvailable: boolean
+    updatedAt: string
+    lat: number
+    lng: number
+  } | null
+  vehicle?: {
+    id: string
+    plateNumber: string
+    status: VehicleStatus
+  } | null
+}
+
+export type AdminAvailableDriversResponse = {
+  items: AdminAvailableDriver[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}

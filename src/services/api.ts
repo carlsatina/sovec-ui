@@ -27,7 +27,10 @@ import type {
   AdminDriverApplicationsResponse,
   ApplicationStatus,
   AdminRidesResponse,
-  FareConfig
+  FareConfig,
+  AdminVehiclesResponse,
+  VehicleStatus,
+  AdminAvailableDriversResponse
 } from './types'
 
 export const api = {
@@ -112,5 +115,45 @@ export const api = {
     request<{ ok: boolean; id: string; status: string; driverId?: string | null }>(`/admin/rides/${id}/reassign`, { method: 'POST', body: payload }),
   adminGetPricing: () => request<{ config: FareConfig }>('/admin/pricing'),
   adminUpdatePricing: (payload: Pick<FareConfig, 'baseFare' | 'perKmRate' | 'perMinuteRate' | 'minimumFare' | 'currency'>) =>
-    request<{ ok: boolean; config: FareConfig }>('/admin/pricing', { method: 'PUT', body: payload })
+    request<{ ok: boolean; config: FareConfig }>('/admin/pricing', { method: 'PUT', body: payload }),
+  adminGetVehicles: (params: { status?: string; q?: string; page?: number; limit?: number } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.q) query.set('q', params.q)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminVehiclesResponse>(`/admin/vehicles?${query.toString()}`)
+  },
+  adminGetAvailableDrivers: (params: {
+    q?: string
+    availableOnly?: boolean
+    unassignedOnly?: boolean
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.q) query.set('q', params.q)
+    query.set('availableOnly', String(params.availableOnly ?? true))
+    query.set('unassignedOnly', String(params.unassignedOnly ?? true))
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminAvailableDriversResponse>(`/admin/drivers/available?${query.toString()}`)
+  },
+  adminCreateVehicle: (payload: {
+    plateNumber: string
+    model: string
+    capacity: number
+    color?: string
+    status?: VehicleStatus
+    batteryCapacityKwh?: number
+    batteryLevel?: number
+    driverId?: string
+  }) => request<{ ok: boolean; vehicle: unknown }>('/admin/vehicles', { method: 'POST', body: payload }),
+  adminAssignVehicleDriver: (vehicleId: string, driverId?: string | null) =>
+    request<{ ok: boolean; vehicle: unknown }>(`/admin/vehicles/${vehicleId}/assign-driver`, { method: 'POST', body: { driverId: driverId ?? null } }),
+  adminUpdateVehicleStatus: (vehicleId: string, status: VehicleStatus, batteryLevel?: number) =>
+    request<{ ok: boolean; vehicle: unknown }>(`/admin/vehicles/${vehicleId}/status`, {
+      method: 'POST',
+      body: typeof batteryLevel === 'number' ? { status, batteryLevel } : { status }
+    })
 }

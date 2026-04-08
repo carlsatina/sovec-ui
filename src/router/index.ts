@@ -52,6 +52,7 @@ const AdminDashboard = () => import('../pages/admin/AdminDashboard.vue')
 const AdminDriverApplications = () => import('../pages/admin/AdminDriverApplications.vue')
 const AdminTripMonitoring = () => import('../pages/admin/AdminTripMonitoring.vue')
 const AdminPricing = () => import('../pages/admin/AdminPricing.vue')
+const AdminFleet = () => import('../pages/admin/AdminFleet.vue')
 
 const routes = [
   { path: '/', redirect: '/auth/splash' },
@@ -113,7 +114,8 @@ const routes = [
   { path: '/admin', component: AdminDashboard, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/driver-applications', component: AdminDriverApplications, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/trips', component: AdminTripMonitoring, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/pricing', component: AdminPricing, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
+  { path: '/admin/pricing', component: AdminPricing, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/fleet', component: AdminFleet, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
 ]
 
 const router = createRouter({
