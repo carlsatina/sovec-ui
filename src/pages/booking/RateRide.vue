@@ -63,7 +63,7 @@
       <button
         class="submit-btn"
         type="button"
-        :disabled="rating === 0 || submitting"
+        :disabled="rating === 0 || submitting || !booking.rideId || !auth.user"
         @click="submitRating"
       >
         <svg v-if="submitting" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0110 10"/></svg>
@@ -81,9 +81,12 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBookingStore } from '../../store/booking'
+import { useAuthStore } from '../../store/auth'
+import { api } from '../../services/api'
 
 const router = useRouter()
 const booking = useBookingStore()
+const auth = useAuthStore()
 
 const rating = ref(0)
 const hovered = ref(0)
@@ -110,11 +113,19 @@ function toggleTag(tag: string) {
 }
 
 async function submitRating() {
+  if (!booking.rideId || !auth.user) return
   submitting.value = true
-  // Stub: would call api.submitRating({ rideId, rating, comment, tags })
-  await new Promise((r) => setTimeout(r, 800))
-  submitting.value = false
-  goHome()
+  try {
+    await api.submitRideRating(booking.rideId, {
+      riderId: auth.user.id,
+      rating: rating.value,
+      comment: comment.value.trim() || undefined,
+      tags: selectedTags.value
+    })
+    goHome()
+  } finally {
+    submitting.value = false
+  }
 }
 
 function goHome() {

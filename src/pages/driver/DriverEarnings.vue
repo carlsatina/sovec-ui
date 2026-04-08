@@ -89,10 +89,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '../../services/api'
+import { useAuthStore } from '../../store/auth'
+import type { DriverEarningsResponse } from '../../services/types'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 const periods = [
   { key: 'today',  label: 'Today' },
@@ -101,15 +105,37 @@ const periods = [
 ]
 
 const period = ref('today')
+const loading = ref(false)
+const earnings = ref<DriverEarningsResponse | null>(null)
 
 const periodLabel = computed(() => periods.find(p => p.key === period.value)?.label ?? '')
 
-// Placeholder data — will come from API in production
-const totalEarnings = computed(() => period.value === 'today' ? '0' : period.value === 'week' ? '0' : '0')
-const totalTrips    = computed(() => 0)
-const totalHours    = computed(() => 0)
-const avgRating     = computed(() => '—')
-const recentTrips   = computed<Array<{ id: string; from: string; to: string; date: string; distance: string; fare: string }>>(() => [])
+const totalEarnings = computed(() => Math.round(earnings.value?.totalEarnings ?? 0))
+const totalTrips = computed(() => earnings.value?.totalTrips ?? 0)
+const totalHours = computed(() => earnings.value?.totalHours ?? 0)
+const avgRating = computed(() => earnings.value?.avgRating ?? '—')
+const recentTrips = computed(() =>
+  (earnings.value?.recentTrips ?? []).map((trip) => ({
+    ...trip,
+    date: new Date(trip.date).toLocaleDateString(),
+    distance: trip.distanceKm != null ? `${trip.distanceKm.toFixed(1)} km` : '—',
+    fare: Math.round(trip.fare).toString()
+  }))
+)
+
+async function fetchEarnings() {
+  const driverId = auth.user?.id
+  if (!driverId) return
+  loading.value = true
+  try {
+    earnings.value = await api.driverGetEarnings(driverId, period.value as 'today' | 'week' | 'month')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchEarnings)
+watch(period, fetchEarnings)
 </script>
 
 <style scoped>

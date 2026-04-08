@@ -31,10 +31,10 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
         <div>
-          <div class="passenger-name">Passenger</div>
+          <div class="passenger-name">{{ passengerName }}</div>
           <div class="passenger-rating">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#f5a623" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-            4.8 · 42 trips
+            {{ passengerPhone || 'Phone unavailable' }}
           </div>
         </div>
         <div class="fare-badge">
@@ -63,9 +63,13 @@
       </div>
 
       <!-- Payment chip -->
-      <div class="payment-chip">
+      <a v-if="passengerPhone" class="payment-chip" :href="`tel:${passengerPhone}`">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        {{ driver.currentRide?.paymentMethod ?? 'CASH' }}
+        Call Passenger
+      </a>
+      <div v-else class="payment-chip no-link">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Phone unavailable
       </div>
 
       <!-- Actions -->
@@ -86,9 +90,11 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDriverStore } from '../../store/driver'
+import { useAuthStore } from '../../store/auth'
 
 const router = useRouter()
 const driver = useDriverStore()
+const auth = useAuthStore()
 
 const TIMEOUT = 30
 const timeLeft = ref(TIMEOUT)
@@ -115,8 +121,22 @@ function shortLabel(addr: string) {
 const pickupShort  = computed(() => shortLabel(driver.currentRide?.pickupAddress  ?? ''))
 const dropoffShort = computed(() => shortLabel(driver.currentRide?.dropoffAddress ?? ''))
 const fareEstimate = computed(() => driver.currentRide ? Math.round(driver.currentRide.fareAmount) : '--')
+const passengerName = computed(() => driver.currentRide?.rider?.name || 'Passenger')
+const passengerPhone = computed(() => driver.currentRide?.rider?.phone ?? '')
 
-const distanceToPickup = computed(() => '~2 km') // would come from driver GPS vs pickup coords
+const distanceToPickup = computed(() => {
+  if (!driver.currentRide || !driver.driverLocation) return '—'
+  const lat1 = driver.driverLocation.lat
+  const lng1 = driver.driverLocation.lng
+  const lat2 = driver.currentRide.pickupLat
+  const lng2 = driver.currentRide.pickupLng
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2
+  const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return `${km.toFixed(1)} km`
+})
 const tripDistance = computed(() => {
   if (!driver.currentRide) return '--'
   const lat1 = driver.currentRide.pickupLat, lng1 = driver.currentRide.pickupLng
@@ -130,20 +150,26 @@ const tripDistance = computed(() => {
 })
 
 async function accept() {
+  const driverId = auth.user?.id
+  if (!driverId) return
   if (timer) { clearInterval(timer); timer = null }
-  await driver.acceptRide()
+  await driver.acceptRide(driverId)
   router.replace('/driver/pickup')
 }
 
 async function decline() {
+  const driverId = auth.user?.id
+  if (!driverId) return
   if (timer) { clearInterval(timer); timer = null }
-  await driver.declineRide()
+  await driver.declineRide(driverId)
   router.replace('/driver/home')
 }
 
 async function autoDecline() {
+  const driverId = auth.user?.id
+  if (!driverId) return
   if (timer) { clearInterval(timer); timer = null }
-  await driver.declineRide()
+  await driver.declineRide(driverId)
   router.replace('/driver/home')
 }
 </script>
@@ -348,7 +374,10 @@ async function autoDecline() {
   font-weight: 600;
   color: rgba(255,255,255,0.6);
   align-self: flex-start;
+  text-decoration: none;
 }
+
+.payment-chip.no-link { cursor: default; }
 
 /* Actions */
 .actions {

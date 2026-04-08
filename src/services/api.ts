@@ -19,7 +19,10 @@ import type {
   DriverApplicationUpdate,
   DriverDocumentCreate,
   DriverAvailabilityCreate,
-  RideDetails
+  RideDetails,
+  DriverSessionResponse,
+  DriverEarningsResponse,
+  SubmitRideRatingRequest
 } from './types'
 
 export const api = {
@@ -58,10 +61,20 @@ export const api = {
     request<{ ok: boolean }>(`/drivers/${driverId}/availability`, { method: 'POST', body: { isAvailable: false } }),
   driverUpdateLocation: (driverId: string, lat: number, lng: number) =>
     request<{ ok: boolean }>('/drivers/location', { method: 'POST', body: { driverId, lat, lng } }),
+  driverGetSession: (driverId: string) =>
+    request<DriverSessionResponse>(`/drivers/${driverId}/session`),
+  driverGetEarnings: (driverId: string, period: 'today' | 'week' | 'month') =>
+    request<DriverEarningsResponse>(`/drivers/${driverId}/earnings?period=${encodeURIComponent(period)}`),
   driverGetActiveRide: (driverId: string) =>
     request<{ ride: RideDetails | null }>(`/rides/driver/${driverId}/active`),
-  rideUpdateStatus: (rideId: string, status: string) =>
-    request<{ id: string; status: string }>(`/rides/${rideId}/status`, { method: 'POST', body: { status } }),
+  rideUpdateStatus: (rideId: string, status: string, driverId?: string) =>
+    request<{ id: string; status: string }>(`/rides/${rideId}/status`, { method: 'POST', body: { status, driverId } }),
+  rideDecline: (rideId: string, driverId: string) =>
+    request<{ ok: boolean }>(`/rides/${rideId}/decline`, { method: 'POST', body: { driverId } }),
+  submitRideRating: (rideId: string, payload: SubmitRideRatingRequest) =>
+    request<{ ok: boolean; id: string }>(`/rides/${rideId}/rate`, { method: 'POST', body: payload }),
+  rideAddEvent: (rideId: string, type: string, metadata?: Record<string, unknown>) =>
+    request<{ id: string; event: string }>(`/rides/${rideId}/events`, { method: 'POST', body: { type, metadata } }),
   rideCancel: (rideId: string) =>
     request<{ ok: boolean }>(`/bookings/${rideId}/cancel`, { method: 'POST' })
 }

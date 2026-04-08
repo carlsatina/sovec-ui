@@ -10,6 +10,7 @@ export const useDriverStore = defineStore('driver', () => {
   const currentRide = ref<RideDetails | null>(null)
   // idle | incoming | arriving | in_progress
   const rideStatus = ref<'idle' | 'incoming' | 'arriving' | 'in_progress'>('idle')
+  const arrivedAtPickup = ref(false)
   const driverLocation = ref<{ lat: number; lng: number } | null>(null)
 
   let locationInterval: ReturnType<typeof setInterval> | null = null
@@ -74,59 +75,63 @@ export const useDriverStore = defineStore('driver', () => {
 
   // ── Ride actions ──────────────────────────────────────────────────────────
 
-  async function acceptRide() {
+  async function acceptRide(driverId: string) {
     if (!currentRide.value) return
     loading.value = true
     try {
-      await api.rideUpdateStatus(currentRide.value.id, 'ARRIVING')
+      await api.rideUpdateStatus(currentRide.value.id, 'ARRIVING', driverId)
       rideStatus.value = 'arriving'
+      arrivedAtPickup.value = false
     } finally {
       loading.value = false
     }
   }
 
-  async function declineRide() {
+  async function declineRide(driverId: string) {
     if (!currentRide.value) return
     loading.value = true
     try {
-      await api.rideCancel(currentRide.value.id)
+      await api.rideDecline(currentRide.value.id, driverId)
       currentRide.value = null
       rideStatus.value = 'idle'
+      arrivedAtPickup.value = false
     } finally {
       loading.value = false
     }
   }
 
-  async function markArrived() {
+  async function markArrived(driverId: string) {
     if (!currentRide.value) return
     loading.value = true
     try {
-      // Stay on ARRIVING status — UI shows "Start Trip" button
-      // No status change needed; just a UI state update
+      await api.rideAddEvent(currentRide.value.id, 'ARRIVED_AT_PICKUP', { driverId })
       rideStatus.value = 'arriving'
+      arrivedAtPickup.value = true
     } finally {
       loading.value = false
     }
   }
 
-  async function startTrip() {
+  async function startTrip(driverId: string) {
     if (!currentRide.value) return
     loading.value = true
     try {
-      await api.rideUpdateStatus(currentRide.value.id, 'IN_PROGRESS')
+      await api.rideUpdateStatus(currentRide.value.id, 'IN_PROGRESS', driverId)
       rideStatus.value = 'in_progress'
+      arrivedAtPickup.value = false
     } finally {
       loading.value = false
     }
   }
 
-  async function completeTrip() {
+  async function completeTrip(driverId: string) {
     if (!currentRide.value) return
     loading.value = true
     try {
-      await api.rideUpdateStatus(currentRide.value.id, 'COMPLETED')
+      await api.rideUpdateStatus(currentRide.value.id, 'COMPLETED', driverId)
       currentRide.value = null
       rideStatus.value = 'idle'
+      arrivedAtPickup.value = false
     } finally {
       loading.value = false
     }
@@ -145,11 +150,13 @@ export const useDriverStore = defineStore('driver', () => {
           if (ride) {
             currentRide.value = ride
             rideStatus.value = 'incoming'
+            arrivedAtPickup.value = false
           }
         })
       } else if (data.status === 'CANCELLED') {
         currentRide.value = null
         rideStatus.value = 'idle'
+        arrivedAtPickup.value = false
       }
     })
   }
@@ -162,14 +169,25 @@ export const useDriverStore = defineStore('driver', () => {
 
   // ── Resume active ride on app open ────────────────────────────────────────
 
-  async function resumeActiveRide(driverId: string) {
-    const { ride } = await api.driverGetActiveRide(driverId)
-    if (!ride) return
-
+  function syncRideState(ride: RideDetails | null) {
     currentRide.value = ride
-    if (ride.status === 'ASSIGNED')    rideStatus.value = 'incoming'
-    if (ride.status === 'ARRIVING')    rideStatus.value = 'arriving'
+    if (!ride) {
+      rideStatus.value = 'idle'
+      arrivedAtPickup.value = false
+      return
+    }
+    if (ride.status === 'ASSIGNED') rideStatus.value = 'incoming'
+    if (ride.status === 'ARRIVING') rideStatus.value = 'arriving'
     if (ride.status === 'IN_PROGRESS') rideStatus.value = 'in_progress'
+    arrivedAtPickup.value = Boolean(ride.events?.some((event) => event.type === 'ARRIVED_AT_PICKUP'))
+  }
+
+  async function resumeSession(driverId: string) {
+    const session = await api.driverGetSession(driverId)
+    isOnline.value = session.isOnline
+    driverLocation.value = session.location ? { lat: session.location.lat, lng: session.location.lng } : null
+    syncRideState(session.ride)
+    if (session.isOnline) startLocationPolling(driverId)
   }
 
   return {
@@ -177,6 +195,7 @@ export const useDriverStore = defineStore('driver', () => {
     loading,
     currentRide,
     rideStatus,
+    arrivedAtPickup,
     driverLocation,
     goOnline,
     goOffline,
@@ -187,6 +206,6 @@ export const useDriverStore = defineStore('driver', () => {
     completeTrip,
     subscribeToRideEvents,
     unsubscribeFromRideEvents,
-    resumeActiveRide,
+    resumeSession,
   }
 })

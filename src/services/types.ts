@@ -12,6 +12,7 @@ export type RideDetails = {
   status: string
   riderId: string
   driverId?: string | null
+  rider?: { id: string; name: string; phone: string } | null
   pickupAddress: string
   pickupLat: number
   pickupLng: number
@@ -22,6 +23,7 @@ export type RideDetails = {
   currency: string
   paymentMethod: string
   createdAt: string
+  events?: Array<{ id: string; type: string; createdAt: string }>
 }
 
 export type FareEstimateRequest = {
@@ -120,4 +122,33 @@ export type DriverAvailabilityCreate = {
   days: string
   hours: string
   preferredCity: string
+}
+
+export type DriverSessionResponse = {
+  isOnline: boolean
+  location: { lat: number; lng: number; updatedAt: string } | null
+  ride: RideDetails | null
+}
+
+export type DriverEarningsResponse = {
+  period: 'today' | 'week' | 'month' | string
+  totalEarnings: number
+  totalTrips: number
+  totalHours: number
+  avgRating: number | null
+  recentTrips: Array<{
+    id: string
+    from: string
+    to: string
+    date: string
+    distanceKm: number | null
+    fare: number
+  }>
+}
+
+export type SubmitRideRatingRequest = {
+  riderId: string
+  rating: number
+  comment?: string
+  tags?: string[]
 }

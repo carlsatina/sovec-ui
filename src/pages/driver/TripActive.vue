@@ -31,12 +31,15 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
         <div class="p-info">
-          <div class="p-name">Passenger</div>
+          <div class="p-name">{{ passengerName }}</div>
           <div class="p-sub">{{ dropoffShort }}</div>
         </div>
-        <a class="call-btn" href="tel:+639000000000" aria-label="Call passenger">
+        <a v-if="passengerPhone" class="call-btn" :href="`tel:${passengerPhone}`" aria-label="Call passenger">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
         </a>
+        <div v-else class="call-btn call-btn-disabled" aria-label="Passenger phone unavailable">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
+        </div>
       </div>
 
       <!-- Drop-off address -->
@@ -83,11 +86,13 @@ import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import NativeMap from '../../components/NativeMap.vue'
 import { useDriverStore } from '../../store/driver'
+import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { decodePolyline } from '../../utils/polyline'
 
 const router = useRouter()
 const driver = useDriverStore()
+const auth = useAuthStore()
 
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const routeDurationMin = ref<number | null>(null)
@@ -107,6 +112,8 @@ const etaText = computed(() => routeDurationMin.value != null ? `~${routeDuratio
 const distanceText = computed(() => routeDistanceKm.value != null ? `${routeDistanceKm.value.toFixed(1)} km` : '…')
 const dropoffShort = computed(() => driver.currentRide?.dropoffAddress?.split(',')[0] ?? '')
 const fareAmount = computed(() => driver.currentRide ? Math.round(driver.currentRide.fareAmount) : '--')
+const passengerName = computed(() => driver.currentRide?.rider?.name || 'Passenger')
+const passengerPhone = computed(() => driver.currentRide?.rider?.phone ?? '')
 const mapsLink = computed(() => {
   if (!driver.currentRide) return '#'
   const { dropoffLat: lat, dropoffLng: lng } = driver.currentRide
@@ -135,7 +142,9 @@ onMounted(async () => {
 })
 
 async function endTrip() {
-  await driver.completeTrip()
+  const driverId = auth.user?.id
+  if (!driverId) return
+  await driver.completeTrip(driverId)
   router.replace('/driver/home')
 }
 </script>
@@ -210,6 +219,11 @@ async function endTrip() {
   color: #00c4bc;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   text-decoration: none;
+}
+
+.call-btn-disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .address-card {

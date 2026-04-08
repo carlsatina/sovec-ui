@@ -95,17 +95,17 @@
       <!-- Today's quick stats -->
       <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-val">₱0</div>
+          <div class="stat-val">₱{{ Math.round(todayEarnings) }}</div>
           <div class="stat-label">Today</div>
         </div>
         <div class="stat-divider" aria-hidden="true"></div>
         <div class="stat-card">
-          <div class="stat-val">0</div>
+          <div class="stat-val">{{ todayTrips }}</div>
           <div class="stat-label">Trips</div>
         </div>
         <div class="stat-divider" aria-hidden="true"></div>
         <div class="stat-card">
-          <div class="stat-val">0h</div>
+          <div class="stat-val">{{ todayHours.toFixed(1) }}h</div>
           <div class="stat-label">Online</div>
         </div>
       </div>
@@ -124,12 +124,16 @@ import NativeMap from '../../components/NativeMap.vue'
 import IncomingRideOverlay from './IncomingRide.vue'
 import { useDriverStore } from '../../store/driver'
 import { useAuthStore } from '../../store/auth'
+import { api } from '../../services/api'
 
 const router = useRouter()
 const driver = useDriverStore()
 const auth = useAuthStore()
 
 const locating = ref(false)
+const todayEarnings = ref(0)
+const todayTrips = ref(0)
+const todayHours = ref(0)
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -175,7 +179,18 @@ onMounted(async () => {
   const driverId = auth.user?.id
   if (!driverId) return
   driver.subscribeToRideEvents(driverId)
-  await driver.resumeActiveRide(driverId)
+  await driver.resumeSession(driverId)
+
+  try {
+    const earnings = await api.driverGetEarnings(driverId, 'today')
+    todayEarnings.value = earnings.totalEarnings
+    todayTrips.value = earnings.totalTrips
+    todayHours.value = earnings.totalHours
+  } catch {
+    todayEarnings.value = 0
+    todayTrips.value = 0
+    todayHours.value = 0
+  }
 
   // If already mid-trip, navigate to the right screen
   if (driver.rideStatus === 'arriving') router.replace('/driver/pickup')
