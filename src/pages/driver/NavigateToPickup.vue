@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import NativeMap from '../../components/NativeMap.vue'
@@ -139,8 +139,11 @@ const mapsLink = computed(() => {
   return `https://www.google.com/maps/dir/?api=1${origin}&destination=${lat},${lng}&travelmode=driving`
 })
 
-onMounted(async () => {
-  if (!driver.currentRide || !driver.driverLocation) return
+async function fetchRouteToPickup() {
+  if (!driver.currentRide || !driver.driverLocation) {
+    routeDurationMin.value = null
+    return
+  }
   try {
     const route = await api.route(
       driver.driverLocation.lat, driver.driverLocation.lng,
@@ -149,8 +152,18 @@ onMounted(async () => {
     routePath.value = route.polyline ? decodePolyline(route.polyline) : []
     routeDurationMin.value = Math.max(1, Math.round(route.durationSeconds / 60))
   } catch {
-    routePath.value = []
+    routePath.value = [
+      { lat: driver.driverLocation.lat, lng: driver.driverLocation.lng },
+      { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng }
+    ]
+    routeDurationMin.value = null
   }
+}
+
+watch(() => driver.driverLocation, fetchRouteToPickup)
+
+onMounted(async () => {
+  await fetchRouteToPickup()
 })
 
 function markArrived() {
