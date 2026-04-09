@@ -32,7 +32,7 @@
           <circle cx="12" cy="21" r="1"/>
           <circle cx="20" cy="21" r="1"/>
           <!-- bolt -->
-          <path d="M17 7l-2 4h3l-2 4" stroke="#fde68a" stroke-width="1.8"/>
+          <path d="M17 7l-2 4h3l-2 4" stroke="#FFF9C4" stroke-width="1.8"/>
         </svg>
         <span class="fab-label">Book</span>
       </RouterLink>
@@ -73,13 +73,13 @@ const route = useRoute()
   left: 0;
   right: 0;
   height: 72px;
-  background: #071524;
+  background: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: space-around;
   padding: 0 4px env(safe-area-inset-bottom, 0px);
-  border-top: 1px solid rgba(0, 196, 188, 0.12);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  border-top: 1px solid #F0EDE8;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
   z-index: 100;
 }
 
@@ -92,28 +92,27 @@ const route = useRoute()
   justify-content: center;
   gap: 4px;
   padding: 8px 0 6px;
-  color: rgba(255, 255, 255, 0.35);
+  color: #C4BAB0;
   text-decoration: none;
   transition: color 0.18s;
   position: relative;
 }
 
 .tab-item.active {
-  color: #00c4bc;
+  color: #60B45A;
 }
 
-/* Active indicator pill */
+/* Active indicator dot */
 .tab-item.active::before {
   content: '';
   position: absolute;
-  top: 0;
+  bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
-  width: 28px;
-  height: 3px;
-  border-radius: 0 0 4px 4px;
-  background: #00c4bc;
-  box-shadow: 0 0 8px rgba(0, 196, 188, 0.6);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #60B45A;
 }
 
 .tab-icon {
@@ -147,27 +146,24 @@ const route = useRoute()
 .fab {
   position: absolute;
   bottom: -4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
   width: 62px;
   height: 62px;
   border-radius: 20px;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
-  box-shadow: 0 6px 20px rgba(0, 196, 188, 0.5), 0 0 0 3px rgba(0, 196, 188, 0.15);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
+  box-shadow: 0 6px 20px rgba(96, 180, 90, 0.4), 0 0 0 3px rgba(96, 180, 90, 0.12);
   color: #fff;
   text-decoration: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .fab:active {
   transform: scale(0.93);
-  box-shadow: 0 4px 12px rgba(0, 196, 188, 0.4);
+  box-shadow: 0 4px 12px rgba(96, 180, 90, 0.35);
 }
 
 .fab-icon {

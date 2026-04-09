@@ -157,7 +157,7 @@
         <!-- Empty state when no recents -->
         <div v-else class="empty-state">
           <div class="empty-icon" aria-hidden="true">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00c4bc" stroke-width="1.5" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#60B45A" stroke-width="1.5" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
           <div class="empty-title">Where are you headed?</div>
           <div class="empty-sub">Search above or tap a favorite to book your EV ride.</div>
@@ -317,51 +317,69 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f1f5f8;
+  background: #F5F2EE;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* ── Hero header ── */
 .hero-header {
-  background: linear-gradient(160deg, #071524 0%, #0c2233 55%, #0d3344 100%);
-  padding: 52px 20px 20px;
+  background: linear-gradient(155deg, #FFFCF5 0%, #FFF6E0 45%, #FDEFC3 100%);
+  padding: 52px 20px 24px;
   display: flex;
   align-items: center;
   gap: 14px;
+  border-bottom: 1px solid #F0E8D0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 60% at 95% 10%, rgba(96,180,90,0.09) 0%, transparent 65%);
+  pointer-events: none;
 }
 
 .back-btn {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  border: none;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.07);
+  background: rgba(255,255,255,0.8);
+  color: #5C3E1A;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
   transition: background 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  position: relative;
+  z-index: 1;
 }
 
-.back-btn:active { background: rgba(255,255,255,0.15); }
+.back-btn:active { background: #fff; }
 
 .hero-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.02em;
+  font-size: 19px;
+  font-weight: 800;
+  color: #2D1A06;
+  letter-spacing: -0.025em;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Route card ── */
 .route-card {
-  margin: -1px 16px 0;
+  margin: 16px 16px 0;
   background: #fff;
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   padding: 6px 0;
   position: relative;
   z-index: 2;
+  border: 1px solid #F0EDE8;
 }
 
 .route-connector {
@@ -372,7 +390,7 @@ onMounted(async () => {
   width: 2px;
   background: repeating-linear-gradient(
     to bottom,
-    #00c4bc 0px, #00c4bc 4px,
+    #60B45A 0px, #60B45A 4px,
     transparent 4px, transparent 9px
   );
 }
@@ -395,19 +413,19 @@ onMounted(async () => {
 
 .pickup-dot {
   border-radius: 50%;
-  background: #00c4bc;
-  box-shadow: 0 0 0 4px rgba(0,196,188,0.15);
+  background: #60B45A;
+  box-shadow: 0 0 0 4px rgba(96,180,90,0.18);
 }
 
 .dest-dot {
   border-radius: 4px;
-  background: #f5a623;
-  box-shadow: 0 0 0 4px rgba(245,166,35,0.15);
+  background: #D4A017;
+  box-shadow: 0 0 0 4px rgba(212,160,23,0.18);
 }
 
 .route-sep {
   height: 1px;
-  background: #f1f5f8;
+  background: #F5F0E8;
   margin: 0 16px 0 42px;
 }
 
@@ -418,17 +436,17 @@ onMounted(async () => {
 
 .route-field-label {
   font-size: 10px;
-  font-weight: 600;
-  color: #9ca3af;
+  font-weight: 700;
+  color: #C4BAB0;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   margin-bottom: 2px;
 }
 
 .route-value {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: #1A1008;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -436,7 +454,7 @@ onMounted(async () => {
 }
 
 .route-value.muted {
-  color: #9ca3af;
+  color: #C4BAB0;
   font-weight: 400;
 }
 
@@ -446,12 +464,13 @@ onMounted(async () => {
   background: transparent;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: #1A1008;
   outline: none;
+  font-family: inherit;
 }
 
 .route-input::placeholder {
-  color: #9ca3af;
+  color: #C4BAB0;
   font-weight: 400;
 }
 
@@ -459,12 +478,12 @@ onMounted(async () => {
   width: 30px;
   height: 30px;
   border: none;
-  background: #f1f5f8;
+  background: #F5F0E8;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: #8C7050;
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -473,12 +492,12 @@ onMounted(async () => {
   width: 24px;
   height: 24px;
   border: none;
-  background: #e5e7eb;
+  background: #EDE8E0;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: #8C7050;
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -496,9 +515,9 @@ onMounted(async () => {
 .section-label {
   font-size: 11px;
   font-weight: 700;
-  color: #9ca3af;
+  color: #C4BAB0;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   margin-bottom: 10px;
 }
 
@@ -515,15 +534,18 @@ onMounted(async () => {
   gap: 12px;
   padding: 14px 16px;
   background: #fff;
-  border: none;
+  border: 1px solid #F0EDE8;
   border-radius: 16px;
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  transition: background 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: background 0.15s, box-shadow 0.15s;
 }
 
-.fav-pill:active { background: #f8fffe; }
+.fav-pill:active {
+  background: #FDFAF4;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
 
 .fav-icon {
   width: 40px;
@@ -536,13 +558,15 @@ onMounted(async () => {
 }
 
 .fav-home {
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff;
+  box-shadow: 0 3px 8px rgba(96,180,90,0.3);
 }
 
 .fav-work {
-  background: linear-gradient(145deg, #f5a623, #d4820a);
+  background: linear-gradient(145deg, #D4A017, #9A7010);
   color: #fff;
+  box-shadow: 0 3px 8px rgba(212,160,23,0.3);
 }
 
 .fav-text {
@@ -553,12 +577,12 @@ onMounted(async () => {
 .fav-title {
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: #1A1008;
 }
 
 .fav-subtitle {
   font-size: 12px;
-  color: #9ca3af;
+  color: #B0A898;
   margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -573,7 +597,8 @@ onMounted(async () => {
   background: #fff;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid #F0EDE8;
 }
 
 .place-item {
@@ -582,13 +607,14 @@ onMounted(async () => {
   gap: 12px;
   align-items: center;
   padding: 13px 16px;
-  border-bottom: 1px solid #f1f5f8;
+  border-bottom: 1px solid #F5F0E8;
   cursor: pointer;
   transition: background 0.12s;
 }
 
 .place-item:last-child { border-bottom: none; }
-.place-item:active { background: #f8fffe; }
+
+.place-item:active { background: #FDFAF4; }
 
 .place-icon-wrap {
   width: 38px;
@@ -601,19 +627,19 @@ onMounted(async () => {
 }
 
 .search-icon-wrap {
-  background: rgba(0,196,188,0.1);
-  color: #00c4bc;
+  background: rgba(96,180,90,0.1);
+  color: #60B45A;
 }
 
 .recent-icon-wrap {
-  background: #f1f5f8;
-  color: #6b7280;
+  background: #F5F0E8;
+  color: #8C7050;
 }
 
 .place-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: #1A1008;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -621,7 +647,7 @@ onMounted(async () => {
 
 .place-subtitle {
   font-size: 12px;
-  color: #6b7280;
+  color: #B0A898;
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -641,7 +667,7 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.remove-btn:active { background: #f1f5f8; }
+.remove-btn:active { background: #F5F0E8; }
 
 /* ── Status / hints ── */
 .status-row {
@@ -649,18 +675,18 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #6b7280;
+  color: #8C7050;
   padding: 12px 4px;
 }
 
-.no-results { color: #9ca3af; }
+.no-results { color: #B0A898; }
 
 .hint-row {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #9ca3af;
+  color: #B0A898;
   padding: 8px 4px;
 }
 
@@ -668,8 +694,8 @@ onMounted(async () => {
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(0,196,188,0.25);
-  border-top-color: #00c4bc;
+  border: 2px solid rgba(96,180,90,0.2);
+  border-top-color: #60B45A;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -693,7 +719,7 @@ onMounted(async () => {
   width: 64px;
   height: 64px;
   border-radius: 20px;
-  background: rgba(0,196,188,0.08);
+  background: rgba(96,180,90,0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -703,12 +729,12 @@ onMounted(async () => {
 .empty-title {
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: #1A1008;
 }
 
 .empty-sub {
   font-size: 13px;
-  color: #9ca3af;
+  color: #B0A898;
   line-height: 1.5;
 }
 </style>

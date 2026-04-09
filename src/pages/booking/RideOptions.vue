@@ -62,18 +62,18 @@
         <!-- Car thumbnail -->
         <div class="car-thumb" aria-hidden="true">
           <svg viewBox="0 0 64 32" fill="none">
-            <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#00c4bc"/>
-            <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#00908a"/>
-            <path d="M20 14 C21 9 24 7 31 7 L31 14Z" fill="rgba(220,255,255,0.55)"/>
-            <path d="M33 14 L33 7 C40 7 43 9 44 14Z" fill="rgba(220,255,255,0.55)"/>
-            <circle cx="15" cy="26" r="4" fill="#071524"/>
-            <circle cx="15" cy="26" r="1.8" fill="#00c4bc"/>
-            <circle cx="49" cy="26" r="4" fill="#071524"/>
-            <circle cx="49" cy="26" r="1.8" fill="#00c4bc"/>
-            <rect x="59" y="16" width="3" height="3" rx="1.5" fill="#fde68a"/>
+            <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#60B45A"/>
+            <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#3D7A38"/>
+            <path d="M20 14 C21 9 24 7 31 7 L31 14Z" fill="rgba(235,255,235,0.55)"/>
+            <path d="M33 14 L33 7 C40 7 43 9 44 14Z" fill="rgba(235,255,235,0.55)"/>
+            <circle cx="15" cy="26" r="4" fill="#2D1A06"/>
+            <circle cx="15" cy="26" r="1.8" fill="#60B45A"/>
+            <circle cx="49" cy="26" r="4" fill="#2D1A06"/>
+            <circle cx="49" cy="26" r="1.8" fill="#60B45A"/>
+            <rect x="59" y="16" width="3" height="3" rx="1.5" fill="#FFF9C4"/>
             <rect x="2"  y="16" width="3" height="3" rx="1.5" fill="#f87171" opacity="0.7"/>
             <!-- bolt -->
-            <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#f5a623"/>
+            <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#D4A017"/>
           </svg>
         </div>
 
@@ -118,7 +118,7 @@
 
         <button class="detail-pill points-pill" type="button">
           <span class="detail-pill-icon pts-icon" aria-hidden="true">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#f5a623"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#D4A017"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
           </span>
           <span class="detail-pill-label">15 pts available</span>
         </button>
@@ -139,7 +139,7 @@
         </button>
 
         <button class="book-btn" :disabled="booking.loading" @click="bookRide">
-          <svg v-if="!booking.loading" width="16" height="16" viewBox="0 0 24 24" fill="#f5a623" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
+          <svg v-if="!booking.loading" width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.75)" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0110 10"/></svg>
           <span>{{ booking.loading ? 'Booking…' : 'Book Now' }}</span>
           <svg v-if="!booking.loading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></svg>
@@ -241,6 +241,7 @@ async function bookRide() {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* ── Map area ── */
@@ -256,7 +257,7 @@ async function bookRide() {
   min-height: 100%;
 }
 
-/* Back button */
+/* Back button — white frosted */
 .map-back {
   position: absolute;
   top: 52px;
@@ -264,39 +265,42 @@ async function bookRide() {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  border: none;
-  background: rgba(7, 21, 36, 0.72);
-  backdrop-filter: blur(8px);
-  color: #fff;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #2D1A06;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
   cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.14);
   transition: background 0.15s;
 }
 
-.map-back:active { background: rgba(7, 21, 36, 0.9); }
+.map-back:active { background: rgba(255,255,255,0.98); }
 
-/* Route chip */
+/* Route summary chip — white frosted */
 .route-chip {
   position: absolute;
   top: 52px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(7, 21, 36, 0.8);
-  backdrop-filter: blur(8px);
-  color: #00c4bc;
-  border: 1px solid rgba(0,196,188,0.25);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.6);
   border-radius: 999px;
   padding: 8px 16px;
   font-size: 12px;
   font-weight: 700;
+  color: #3D7A38;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   z-index: 5;
   letter-spacing: 0.01em;
 }
@@ -304,18 +308,20 @@ async function bookRide() {
 /* Address pills */
 .address-pill {
   position: absolute;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.7);
   border-radius: 999px;
   padding: 7px 12px 7px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #111827;
+  color: #2D1A06;
   max-width: 52%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -332,20 +338,18 @@ async function bookRide() {
   flex-shrink: 0;
 }
 
-.pill-dot-teal { background: #00c4bc; }
-.pill-dot-gold {
-  background: #f5a623;
-  border-radius: 2px;
-}
+.pill-dot-teal { background: #60B45A; }
+.pill-dot-gold { background: #D4A017; border-radius: 2px; }
 
 /* For other button */
 .for-other {
   position: absolute;
   left: 14px;
   bottom: 16px;
-  border: none;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 999px;
   padding: 8px 14px 8px 8px;
   display: inline-flex;
@@ -353,8 +357,8 @@ async function bookRide() {
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  color: #2D1A06;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
   z-index: 5;
   cursor: pointer;
 }
@@ -363,31 +367,31 @@ async function bookRide() {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(145deg, #D4A017, #9A7010);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-/* ── Sheet ── */
+/* ── Bottom sheet ── */
 .sheet {
-  background: #f1f5f8;
+  background: #F5F2EE;
   border-radius: 28px 28px 0 0;
   margin-top: -28px;
-  padding: 8px 16px 28px;
+  padding: 8px 16px 32px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.1);
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.08);
 }
 
 .sheet-handle {
   width: 36px;
   height: 4px;
   border-radius: 999px;
-  background: #d1d5db;
-  margin: 4px auto 2px;
+  background: #E0D8CC;
+  margin: 4px auto 4px;
 }
 
 /* Error banner */
@@ -395,12 +399,12 @@ async function bookRide() {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: #FEF0F0;
+  border: 1px solid rgba(197,48,48,0.25);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 12px;
-  color: #991b1b;
+  color: #8B1A1A;
 }
 
 /* Section heading */
@@ -412,41 +416,47 @@ async function bookRide() {
 
 .section-title {
   font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  color: #1A1008;
+  letter-spacing: -0.02em;
 }
 
 .ride-count {
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: #C4BAB0;
+  background: #EDE8E0;
+  padding: 3px 10px;
+  border-radius: 999px;
 }
 
 /* ── Option card ── */
 .option-card {
   background: #fff;
-  border: 2px solid #e5e7eb;
-  border-radius: 18px;
-  padding: 12px 12px 12px 14px;
+  border: 1.5px solid #EDE8E0;
+  border-radius: 20px;
+  padding: 14px 14px 14px 14px;
   display: grid;
-  grid-template-columns: 68px 1fr auto 26px;
+  grid-template-columns: 72px 1fr auto 26px;
   align-items: center;
   gap: 10px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
 }
 
 .option-card.selected {
-  border-color: #00c4bc;
-  background: linear-gradient(135deg, #f0fffe 0%, #fff 60%);
-  box-shadow: 0 4px 20px rgba(0,196,188,0.14);
+  border-color: #60B45A;
+  border-width: 2px;
+  background: linear-gradient(135deg, rgba(96,180,90,0.04) 0%, #fff 55%);
+  box-shadow: 0 4px 20px rgba(96,180,90,0.14);
 }
 
+/* Car illustration thumbnail */
 .car-thumb {
-  width: 68px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #e0fafa 0%, #c7f4f4 100%);
+  width: 72px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #EBF7EA 0%, #D4F0D2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -464,7 +474,7 @@ async function bookRide() {
 .option-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -476,22 +486,24 @@ async function bookRide() {
 
 .option-name {
   font-size: 14px;
-  font-weight: 700;
-  color: #111827;
+  font-weight: 800;
+  color: #1A1008;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .ev-badge {
-  background: rgba(0,196,188,0.12);
-  color: #007d78;
+  background: rgba(96,180,90,0.12);
+  color: #3D7A38;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   flex-shrink: 0;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .option-meta-row {
@@ -502,12 +514,12 @@ async function bookRide() {
 
 .option-meta {
   font-size: 12px;
-  color: #6b7280;
+  color: #B0A898;
   font-weight: 500;
 }
 
 .meta-dot {
-  color: #d1d5db;
+  color: #E0D8CC;
   font-size: 14px;
   line-height: 1;
 }
@@ -520,15 +532,15 @@ async function bookRide() {
 .fare-range {
   font-size: 15px;
   font-weight: 800;
-  color: #111827;
-  letter-spacing: -0.02em;
+  color: #1A1008;
+  letter-spacing: -0.025em;
   line-height: 1.1;
 }
 
 .fare-currency {
   font-size: 10px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 700;
+  color: #B0A898;
   margin-right: 1px;
   vertical-align: top;
   line-height: 1.6;
@@ -536,7 +548,7 @@ async function bookRide() {
 
 .fare-label {
   font-size: 10px;
-  color: #9ca3af;
+  color: #C4BAB0;
   font-weight: 500;
   margin-top: 2px;
 }
@@ -545,8 +557,8 @@ async function bookRide() {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #00c4bc;
-  box-shadow: 0 0 0 3px rgba(0,196,188,0.18);
+  background: #60B45A;
+  box-shadow: 0 0 0 3px rgba(96,180,90,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -563,26 +575,29 @@ async function bookRide() {
 
 .detail-pill {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1px solid #EDE8E0;
   border-radius: 14px;
-  height: 42px;
+  height: 44px;
   padding: 0 10px;
   display: flex;
   align-items: center;
   gap: 7px;
   font-size: 12px;
   font-weight: 600;
-  color: #111827;
+  color: #1A1008;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
-.detail-pill:active { background: #f8fffe; border-color: #00c4bc; }
+.detail-pill:active {
+  background: #FDFAF4;
+  border-color: rgba(96,180,90,0.4);
+}
 
 .detail-pill.points-pill {
-  background: rgba(245,166,35,0.06);
-  border-color: rgba(245,166,35,0.3);
-  color: #92400e;
+  background: rgba(212,160,23,0.05);
+  border-color: rgba(212,160,23,0.28);
+  color: #7A5C0A;
 }
 
 .detail-pill-icon {
@@ -596,13 +611,11 @@ async function bookRide() {
 }
 
 .pay-icon {
-  background: rgba(0,196,188,0.1);
-  color: #00c4bc;
+  background: rgba(96,180,90,0.1);
+  color: #60B45A;
 }
 
-.pts-icon {
-  background: rgba(245,166,35,0.12);
-}
+.pts-icon { background: rgba(212,160,23,0.12); }
 
 .detail-pill-label {
   flex: 1;
@@ -613,29 +626,33 @@ async function bookRide() {
 
 .detail-chevron {
   flex-shrink: 0;
-  color: #9ca3af;
+  color: #C4BAB0;
 }
 
 /* ── Invoice row ── */
 .invoice-row {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1px solid #EDE8E0;
   border-radius: 14px;
-  height: 42px;
+  height: 44px;
   padding: 0 14px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #4b5563;
+  color: #8C7050;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
 }
 
-.invoice-row:active { background: #f8fffe; }
+.invoice-row:active {
+  background: #FDFAF4;
+  border-color: rgba(96,180,90,0.3);
+}
 
-.invoice-chevron { margin-left: auto; flex-shrink: 0; }
+.invoice-chevron { margin-left: auto; flex-shrink: 0; color: #C4BAB0; }
 
 /* ── Bottom actions ── */
 .bottom-actions {
@@ -651,28 +668,29 @@ async function bookRide() {
   align-items: center;
   gap: 7px;
   padding: 0 18px;
-  height: 52px;
+  height: 56px;
   border-radius: 999px;
-  border: 2px solid rgba(7,21,36,0.15);
+  border: 1.5px solid #EDE8E0;
   background: #fff;
   font-size: 14px;
   font-weight: 700;
-  color: #374151;
+  color: #5C3E1A;
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
 }
 
 .schedule-btn:active {
-  border-color: #00c4bc;
-  color: #007d78;
+  border-color: #60B45A;
+  background: #FDFAF4;
 }
 
 .book-btn {
-  height: 52px;
+  height: 56px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff;
   font-size: 16px;
   font-weight: 800;
@@ -681,9 +699,10 @@ async function bookRide() {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,196,188,0.4);
+  box-shadow: 0 8px 24px rgba(96,180,90,0.38);
   transition: opacity 0.15s, transform 0.12s;
   letter-spacing: -0.01em;
+  font-family: inherit;
 }
 
 .book-btn:active {
@@ -692,7 +711,7 @@ async function bookRide() {
 }
 
 .book-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -702,9 +721,9 @@ async function bookRide() {
 .spin { animation: spin 0.8s linear infinite; }
 
 @media (max-width: 380px) {
-  .option-name   { font-size: 13px; }
-  .fare-range    { font-size: 14px; }
-  .book-btn      { font-size: 15px; }
-  .schedule-btn  { padding: 0 13px; font-size: 13px; }
+  .option-name  { font-size: 13px; }
+  .fare-range   { font-size: 14px; }
+  .book-btn     { font-size: 15px; }
+  .schedule-btn { padding: 0 13px; font-size: 13px; }
 }
 </style>

@@ -65,7 +65,7 @@
       <!-- Note row -->
       <button class="note-row" type="button">
         <span class="note-icon-wrap" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1f6ad8" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60B45A" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </span>
         <span class="note-text">Add a note for driver</span>
         <svg class="note-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>
@@ -73,7 +73,7 @@
 
       <!-- Confirm button -->
       <button class="confirm-btn" type="button" @click="confirmLocation">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f5a623" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
         {{ confirmLabel }}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></svg>
       </button>
@@ -176,6 +176,7 @@ function confirmLocation() {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* ── Map area ── */
@@ -191,7 +192,7 @@ function confirmLocation() {
   min-height: 100%;
 }
 
-/* Back button */
+/* Back button — white frosted pill on map */
 .map-back {
   position: absolute;
   top: 52px;
@@ -199,39 +200,42 @@ function confirmLocation() {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  border: none;
-  background: rgba(7, 21, 36, 0.72);
-  backdrop-filter: blur(8px);
-  color: #fff;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #2D1A06;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
   cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.14);
   transition: background 0.15s;
 }
 
-.map-back:active { background: rgba(7, 21, 36, 0.9); }
+.map-back:active { background: rgba(255,255,255,0.98); }
 
-/* Type chip */
+/* Type chip — frosted white pill */
 .type-chip {
   position: absolute;
   top: 52px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(7, 21, 36, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.6);
   border-radius: 999px;
   padding: 8px 16px;
   font-size: 12px;
   font-weight: 700;
-  color: #fff;
+  color: #2D1A06;
   display: flex;
   align-items: center;
   gap: 7px;
   white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   z-index: 5;
   letter-spacing: 0.01em;
 }
@@ -243,10 +247,10 @@ function confirmLocation() {
   flex-shrink: 0;
 }
 
-.dot-teal { background: #00c4bc; box-shadow: 0 0 0 3px rgba(0,196,188,0.3); }
-.dot-gold { background: #f5a623; border-radius: 2px; box-shadow: 0 0 0 3px rgba(245,166,35,0.3); }
+.dot-teal { background: #60B45A; box-shadow: 0 0 0 3px rgba(96,180,90,0.25); }
+.dot-gold  { background: #D4A017; border-radius: 2px; box-shadow: 0 0 0 3px rgba(212,160,23,0.25); }
 
-/* ── Center pin ── */
+/* ── Center map pin ── */
 .map-pin-wrap {
   position: absolute;
   top: 50%;
@@ -263,9 +267,9 @@ function confirmLocation() {
   width: 44px;
   height: 44px;
   border-radius: 50% 50% 50% 4px;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   transform: rotate(-45deg);
-  box-shadow: 0 6px 20px rgba(0,196,188,0.5);
+  box-shadow: 0 6px 20px rgba(96,180,90,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,8 +283,8 @@ function confirmLocation() {
 }
 
 .map-pin-head.geocoding {
-  background: linear-gradient(145deg, #6b7280, #4b5563);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  background: linear-gradient(145deg, #B0A898, #8C7050);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 
 .pin-spinner {
@@ -296,7 +300,7 @@ function confirmLocation() {
 .map-pin-stem {
   width: 3px;
   height: 10px;
-  background: linear-gradient(to bottom, #00908a, transparent);
+  background: linear-gradient(to bottom, #3D7A38, transparent);
   margin-top: -2px;
 }
 
@@ -304,28 +308,28 @@ function confirmLocation() {
   width: 14px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.15);
   margin-top: 1px;
 }
 
-/* ── Sheet ── */
+/* ── Bottom sheet ── */
 .sheet {
-  background: #f1f5f8;
+  background: #F5F2EE;
   border-radius: 28px 28px 0 0;
   margin-top: -28px;
-  padding: 8px 16px 32px;
+  padding: 8px 16px 36px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.1);
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.08);
 }
 
 .sheet-handle {
   width: 36px;
   height: 4px;
   border-radius: 999px;
-  background: #d1d5db;
-  margin: 4px auto 2px;
+  background: #E0D8CC;
+  margin: 4px auto 4px;
 }
 
 /* Status chip */
@@ -338,26 +342,26 @@ function confirmLocation() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
+  padding: 7px 16px;
   border-radius: 999px;
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1px solid #EDE8E0;
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: #5C3E1A;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .status-chip.loading {
-  border-color: rgba(0,196,188,0.3);
-  color: #007d78;
+  border-color: rgba(96,180,90,0.35);
+  color: #3D7A38;
 }
 
 .chip-spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(0,196,188,0.25);
-  border-top-color: #00c4bc;
+  border: 2px solid rgba(96,180,90,0.2);
+  border-top-color: #60B45A;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -372,8 +376,8 @@ function confirmLocation() {
   grid-template-columns: 24px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border: 1px solid #EDE8E0;
 }
 
 .address-dot-wrap {
@@ -392,33 +396,31 @@ function confirmLocation() {
 
 .address-dot.dot-teal {
   border-radius: 50%;
-  background: #00c4bc;
-  box-shadow: 0 0 0 4px rgba(0,196,188,0.15);
+  background: #60B45A;
+  box-shadow: 0 0 0 4px rgba(96,180,90,0.18);
 }
 
 .address-dot.dot-gold {
   border-radius: 3px;
-  background: #f5a623;
-  box-shadow: 0 0 0 4px rgba(245,166,35,0.15);
+  background: #D4A017;
+  box-shadow: 0 0 0 4px rgba(212,160,23,0.18);
 }
 
-.address-body {
-  min-width: 0;
-}
+.address-body { min-width: 0; }
 
 .address-label {
   font-size: 10px;
-  font-weight: 600;
-  color: #9ca3af;
+  font-weight: 700;
+  color: #C4BAB0;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   margin-bottom: 3px;
 }
 
 .address-title {
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: #1A1008;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -426,7 +428,7 @@ function confirmLocation() {
 
 .address-subtitle {
   font-size: 12px;
-  color: #6b7280;
+  color: #B0A898;
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -438,40 +440,43 @@ function confirmLocation() {
   width: 34px;
   height: 34px;
   border: none;
-  background: #f1f5f8;
+  background: #F5F0E8;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: #8C7050;
   flex-shrink: 0;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.address-edit:active { background: #e5e7eb; }
+.address-edit:active { background: #EDE8E0; }
 
 /* Note row */
 .note-row {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1px solid #EDE8E0;
   border-radius: 14px;
-  height: 44px;
+  height: 48px;
   padding: 0 14px;
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.note-row:active { background: #f8fffe; border-color: #00c4bc; }
+.note-row:active {
+  background: #FDFAF4;
+  border-color: rgba(96,180,90,0.4);
+}
 
 .note-icon-wrap {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: rgba(31,106,216,0.08);
+  background: rgba(96,180,90,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -482,7 +487,7 @@ function confirmLocation() {
   flex: 1;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #5C3E1A;
   text-align: left;
 }
 
@@ -495,17 +500,18 @@ function confirmLocation() {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  height: 54px;
+  height: 56px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff;
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,196,188,0.4);
+  box-shadow: 0 8px 24px rgba(96,180,90,0.38);
   transition: opacity 0.15s, transform 0.12s;
   letter-spacing: -0.01em;
+  font-family: inherit;
 }
 
 .confirm-btn:active {
