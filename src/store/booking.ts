@@ -37,6 +37,7 @@ export const useBookingStore = defineStore('booking', () => {
   // Keep references to active socket handlers so we can remove only them
   let rideStatusHandler: ((payload: RideStatusPayload) => void) | null = null
   let driverLocationHandler: ((payload: { lat: number; lng: number }) => void) | null = null
+  let rideStatusPoller: ReturnType<typeof setInterval> | null = null
 
   // True while both handlers are registered — lets pages avoid redundant resubscription
   const hasActiveSubscription = ref(false)
@@ -120,9 +121,25 @@ export const useBookingStore = defineStore('booking', () => {
     }
   }
 
+  function stopRideStatusPolling() {
+    if (rideStatusPoller != null) {
+      clearInterval(rideStatusPoller)
+      rideStatusPoller = null
+    }
+  }
+
+  function startRideStatusPolling(id: string) {
+    stopRideStatusPolling()
+    rideStatusPoller = setInterval(() => {
+      void refreshRideDetails(id)
+    }, 5000)
+  }
+
   async function refreshRideDetails(id: string) {
     try {
       const ride = await api.getRide(id)
+      if (rideId.value !== id) return
+      rideStatus.value = ride.status
       assignedDriver.value = ride.driver
         ? {
             id: ride.driver.id,
@@ -131,6 +148,9 @@ export const useBookingStore = defineStore('booking', () => {
             vehicle: ride.driver.vehicle ?? null
           }
         : null
+      if (ride.status === 'CANCELLED' || ride.status === 'COMPLETED') {
+        stopRideStatusPolling()
+      }
     } catch {
       // Keep existing UI state if the refresh fails.
     }
@@ -138,7 +158,8 @@ export const useBookingStore = defineStore('booking', () => {
 
   function subscribeToRideUpdates(id: string) {
     const socket = getSocket()
-    socket.emit('join', { rideId: id })
+    const auth = useAuthStore()
+    socket.emit('join', { userId: auth.user?.id, rideId: id })
 
     // Remove any previously registered handlers before adding new ones
     unsubscribeFromRideUpdates()
@@ -151,6 +172,7 @@ export const useBookingStore = defineStore('booking', () => {
       }
       if (payload.status === 'CANCELLED' || payload.status === 'COMPLETED') {
         assignedDriver.value = null
+        stopRideStatusPolling()
       }
     }
     socket.on('ride:status', rideStatusHandler)
@@ -160,6 +182,7 @@ export const useBookingStore = defineStore('booking', () => {
     }
     socket.on('driver:location', driverLocationHandler)
     hasActiveSubscription.value = true
+    startRideStatusPolling(id)
     void refreshRideDetails(id)
   }
 
@@ -173,6 +196,7 @@ export const useBookingStore = defineStore('booking', () => {
       socket.off('driver:location', driverLocationHandler)
       driverLocationHandler = null
     }
+    stopRideStatusPolling()
     hasActiveSubscription.value = false
   }
 
