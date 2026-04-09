@@ -12,6 +12,12 @@ export type RideDetails = {
   status: string
   riderId: string
   driverId?: string | null
+  driver?: {
+    id: string
+    name: string
+    phone: string
+    vehicle?: { model: string; plateNumber: string } | null
+  } | null
   rider?: { id: string; name: string; phone: string } | null
   pickupAddress: string
   pickupLat: number

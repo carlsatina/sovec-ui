@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import NativeMap from '../../components/NativeMap.vue'
@@ -97,6 +97,7 @@ const auth = useAuthStore()
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const routeDurationMin = ref<number | null>(null)
 const routeDistanceKm = ref<number | null>(null)
+const carMarkerIcon = 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png'
 
 const mapCenter = computed(() =>
   driver.driverLocation
@@ -105,7 +106,24 @@ const mapCenter = computed(() =>
 
 const mapMarkers = computed(() => {
   if (!driver.currentRide) return []
-  return [{ lat: driver.currentRide.dropoffLat, lng: driver.currentRide.dropoffLng, title: 'Drop-off' }]
+  const markers: Array<{
+    lat: number
+    lng: number
+    title?: string
+    iconUrl?: string
+    iconSize?: { width: number; height: number }
+  }> = []
+  if (driver.driverLocation) {
+    markers.push({
+      lat: driver.driverLocation.lat,
+      lng: driver.driverLocation.lng,
+      title: 'Driver',
+      iconUrl: carMarkerIcon,
+      iconSize: { width: 36, height: 36 }
+    })
+  }
+  markers.push({ lat: driver.currentRide.dropoffLat, lng: driver.currentRide.dropoffLng, title: 'Drop-off' })
+  return markers
 })
 
 const etaText = computed(() => routeDurationMin.value != null ? `~${routeDurationMin.value} min` : '…')
@@ -126,19 +144,47 @@ const mapsLink = computed(() => {
   return `https://www.google.com/maps/dir/?api=1${origin}&destination=${lat},${lng}&travelmode=driving`
 })
 
-onMounted(async () => {
-  if (!driver.currentRide || !driver.driverLocation) return
+async function fetchRoute() {
+  if (!driver.currentRide) return
+  try {
+    const route = await api.route(
+      driver.currentRide.pickupLat, driver.currentRide.pickupLng,
+      driver.currentRide.dropoffLat, driver.currentRide.dropoffLng
+    )
+    routePath.value = route.polyline ? decodePolyline(route.polyline) : []
+  } catch {
+    routePath.value = [
+      { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng },
+      { lat: driver.currentRide.dropoffLat, lng: driver.currentRide.dropoffLng }
+    ]
+  }
+}
+
+async function fetchLiveTripMetrics() {
+  if (!driver.currentRide || !driver.driverLocation) {
+    routeDurationMin.value = null
+    routeDistanceKm.value = null
+    return
+  }
   try {
     const route = await api.route(
       driver.driverLocation.lat, driver.driverLocation.lng,
       driver.currentRide.dropoffLat, driver.currentRide.dropoffLng
     )
-    routePath.value = route.polyline ? decodePolyline(route.polyline) : []
     routeDurationMin.value = Math.max(1, Math.round(route.durationSeconds / 60))
     routeDistanceKm.value = route.distanceMeters / 1000
   } catch {
-    routePath.value = []
+    routeDurationMin.value = null
+    routeDistanceKm.value = null
   }
+}
+
+watch(() => driver.driverLocation, fetchLiveTripMetrics)
+
+onMounted(async () => {
+  if (!driver.currentRide) return
+  await fetchRoute()
+  await fetchLiveTripMetrics()
 })
 
 async function endTrip() {

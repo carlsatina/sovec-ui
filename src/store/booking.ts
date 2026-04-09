@@ -14,6 +14,12 @@ type LocationPoint = {
 }
 
 type RideStatusPayload = { rideId: string; status: string }
+type AssignedDriver = {
+  id: string
+  name: string
+  phone: string
+  vehicle?: { model: string; plateNumber: string } | null
+}
 
 export const useBookingStore = defineStore('booking', () => {
   const pickup = ref<LocationPoint | null>(null)
@@ -23,6 +29,7 @@ export const useBookingStore = defineStore('booking', () => {
   const fareEstimate = ref<{ total: number; currency: string; distanceKm?: number; durationMin?: number } | null>(null)
   const rideId = ref<string | null>(null)
   const rideStatus = ref<string | null>(null)
+  const assignedDriver = ref<AssignedDriver | null>(null)
   const driverLocation = ref<{ lat: number; lng: number } | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -102,6 +109,7 @@ export const useBookingStore = defineStore('booking', () => {
     try {
       await api.cancelBooking(rideId.value)
       rideStatus.value = 'CANCELLED'
+      assignedDriver.value = null
       driverLocation.value = null
       unsubscribeFromRideUpdates()
     } catch (err) {
@@ -109,6 +117,22 @@ export const useBookingStore = defineStore('booking', () => {
       throw err
     } finally {
       loading.value = false
+    }
+  }
+
+  async function refreshRideDetails(id: string) {
+    try {
+      const ride = await api.getRide(id)
+      assignedDriver.value = ride.driver
+        ? {
+            id: ride.driver.id,
+            name: ride.driver.name,
+            phone: ride.driver.phone,
+            vehicle: ride.driver.vehicle ?? null
+          }
+        : null
+    } catch {
+      // Keep existing UI state if the refresh fails.
     }
   }
 
@@ -122,6 +146,12 @@ export const useBookingStore = defineStore('booking', () => {
     rideStatusHandler = (payload: RideStatusPayload) => {
       if (payload.rideId !== id) return
       rideStatus.value = payload.status
+      if (payload.status === 'ASSIGNED' || payload.status === 'ARRIVING' || payload.status === 'IN_PROGRESS') {
+        void refreshRideDetails(id)
+      }
+      if (payload.status === 'CANCELLED' || payload.status === 'COMPLETED') {
+        assignedDriver.value = null
+      }
     }
     socket.on('ride:status', rideStatusHandler)
 
@@ -130,6 +160,7 @@ export const useBookingStore = defineStore('booking', () => {
     }
     socket.on('driver:location', driverLocationHandler)
     hasActiveSubscription.value = true
+    void refreshRideDetails(id)
   }
 
   function unsubscribeFromRideUpdates() {
@@ -154,6 +185,7 @@ export const useBookingStore = defineStore('booking', () => {
     fareEstimate.value = null
     rideId.value = null
     rideStatus.value = null
+    assignedDriver.value = null
     driverLocation.value = null
     loading.value = false
     error.value = null
@@ -167,6 +199,7 @@ export const useBookingStore = defineStore('booking', () => {
     fareEstimate,
     rideId,
     rideStatus,
+    assignedDriver,
     driverLocation,
     hasActiveSubscription,
     loading,
@@ -179,6 +212,7 @@ export const useBookingStore = defineStore('booking', () => {
     createBooking,
     cancelBooking,
     resetBooking,
+    refreshRideDetails,
     resubscribeToRideUpdates: subscribeToRideUpdates,
     unsubscribeFromRideUpdates
   }

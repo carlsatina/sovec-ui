@@ -78,6 +78,8 @@ export const api = {
     request<{ ride: RideDetails | null }>(`/rides/driver/${driverId}/active`),
   rideUpdateStatus: (rideId: string, status: string, driverId?: string) =>
     request<{ id: string; status: string }>(`/rides/${rideId}/status`, { method: 'POST', body: { status, driverId } }),
+  getRide: (rideId: string) =>
+    request<RideDetails>(`/rides/${rideId}`),
   rideDecline: (rideId: string, driverId: string) =>
     request<{ ok: boolean }>(`/rides/${rideId}/decline`, { method: 'POST', body: { driverId } }),
   submitRideRating: (rideId: string, payload: SubmitRideRatingRequest) =>

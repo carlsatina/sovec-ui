@@ -33,12 +33,15 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
         <div class="d-info">
-          <div class="d-name">Your Driver</div>
-          <div class="d-sub">E-Ride Taxi · ⭐ 4.9</div>
+          <div class="d-name">{{ driverName }}</div>
+          <div class="d-sub">{{ driverSubtitle }}</div>
         </div>
-        <a class="call-btn" href="tel:+639000000000" aria-label="Call driver">
+        <a v-if="driverPhone" class="call-btn" :href="`tel:${driverPhone}`" aria-label="Call driver">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
         </a>
+        <div v-else class="call-btn call-btn-disabled" aria-label="Driver phone unavailable">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
+        </div>
       </div>
 
       <!-- Pickup address -->
@@ -83,6 +86,13 @@ const mapMarkers = computed(() => {
 
 const etaText = computed(() => etaDurationMin.value != null ? `~${etaDurationMin.value} min` : null)
 const pickupShort = computed(() => booking.pickup?.address?.split(',')[0] ?? '')
+const driverName = computed(() => booking.assignedDriver?.name || 'Your Driver')
+const driverPhone = computed(() => booking.assignedDriver?.phone ?? '')
+const driverSubtitle = computed(() => {
+  const vehicle = booking.assignedDriver?.vehicle
+  if (!vehicle) return 'Driver assigned'
+  return `${vehicle.model} · ${vehicle.plateNumber}`
+})
 
 async function fetchRoute() {
   if (!booking.driverLocation || !booking.pickup) return
@@ -108,6 +118,9 @@ onMounted(() => {
   // which races with FindingDriver's onBeforeUnmount removing the new handlers.
   if (booking.rideId && !booking.hasActiveSubscription) {
     booking.resubscribeToRideUpdates(booking.rideId)
+  }
+  if (booking.rideId && !booking.assignedDriver) {
+    void booking.refreshRideDetails(booking.rideId)
   }
   fetchRoute()
 })
@@ -241,6 +254,11 @@ watch(
   justify-content: center;
   flex-shrink: 0;
   text-decoration: none;
+}
+
+.call-btn-disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .address-card {

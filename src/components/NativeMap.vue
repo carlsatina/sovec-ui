@@ -19,7 +19,14 @@ const props = withDefaults(
     mapId?: string
     center: { lat: number; lng: number }
     zoom?: number
-    markers?: Array<{ lat: number; lng: number; title?: string; draggable?: boolean }>
+    markers?: Array<{
+      lat: number
+      lng: number
+      title?: string
+      draggable?: boolean
+      iconUrl?: string
+      iconSize?: { width: number; height: number }
+    }>
     path?: Array<{ lat: number; lng: number }>
     interactive?: boolean
   }>(),
@@ -93,7 +100,9 @@ async function syncOverlays() {
     const markers: Marker[] = props.markers.map((item) => ({
       coordinate: { lat: item.lat, lng: item.lng },
       title: item.title,
-      draggable: item.draggable ?? false
+      draggable: item.draggable ?? false,
+      iconUrl: item.iconUrl,
+      iconSize: item.iconSize
     }))
     markerIds.value = await map.value.addMarkers(markers)
   }
@@ -204,6 +213,12 @@ function syncWebOverlays() {
       position: { lat: item.lat, lng: item.lng },
       title: item.title,
       draggable: item.draggable ?? false,
+      icon: item.iconUrl
+        ? {
+            url: item.iconUrl,
+            scaledSize: item.iconSize ? new g.Size(item.iconSize.width, item.iconSize.height) : undefined
+          }
+        : undefined,
       map: webMap.value
     })
     if (item.draggable) {
