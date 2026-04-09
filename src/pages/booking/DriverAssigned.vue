@@ -71,6 +71,7 @@ const booking = useBookingStore()
 
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const etaDurationMin = ref<number | null>(null)
+const carMarkerIcon = 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png'
 
 const mapCenter = computed(() =>
   booking.driverLocation
@@ -78,8 +79,21 @@ const mapCenter = computed(() =>
 )
 
 const mapMarkers = computed(() => {
-  const markers: Array<{ lat: number; lng: number; title?: string }> = []
-  if (booking.driverLocation) markers.push({ ...booking.driverLocation, title: 'Driver' })
+  const markers: Array<{
+    lat: number
+    lng: number
+    title?: string
+    iconUrl?: string
+    iconSize?: { width: number; height: number }
+  }> = []
+  if (booking.driverLocation) {
+    markers.push({
+      ...booking.driverLocation,
+      title: 'Driver',
+      iconUrl: carMarkerIcon,
+      iconSize: { width: 36, height: 36 }
+    })
+  }
   if (booking.pickup) markers.push({ lat: booking.pickup.lat, lng: booking.pickup.lng, title: 'Pickup' })
   return markers
 })

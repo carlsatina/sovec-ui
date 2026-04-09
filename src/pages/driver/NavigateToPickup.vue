@@ -92,6 +92,7 @@ const auth = useAuthStore()
 
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const routeDurationMin = ref<number | null>(null)
+const carMarkerIcon = 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png'
 
 const mapCenter = computed(() =>
   driver.driverLocation
@@ -100,7 +101,24 @@ const mapCenter = computed(() =>
 
 const mapMarkers = computed(() => {
   if (!driver.currentRide) return []
-  return [{ lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng, title: 'Pickup' }]
+  const markers: Array<{
+    lat: number
+    lng: number
+    title?: string
+    iconUrl?: string
+    iconSize?: { width: number; height: number }
+  }> = []
+  if (driver.driverLocation) {
+    markers.push({
+      lat: driver.driverLocation.lat,
+      lng: driver.driverLocation.lng,
+      title: 'Driver',
+      iconUrl: carMarkerIcon,
+      iconSize: { width: 36, height: 36 }
+    })
+  }
+  markers.push({ lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng, title: 'Pickup' })
+  return markers
 })
 
 const etaText = computed(() => routeDurationMin.value != null ? `~${routeDurationMin.value} min` : '…')
