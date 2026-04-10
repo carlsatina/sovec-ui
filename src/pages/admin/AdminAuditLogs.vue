@@ -12,13 +12,48 @@
       <div class="filter-row">
         <input v-model.trim="q" class="input" placeholder="Search id/summary/action/target/admin" />
         <input v-model.trim="action" class="input" placeholder="Action (e.g. PAYMENT_VERIFY)" />
-        <input v-model.trim="targetType" class="input" placeholder="Target type (e.g. payment, vehicle)" />
+        <input v-model.trim="targetType" class="input" placeholder="Target type (e.g. PAYMENT, VEHICLE)" />
+      </div>
+      <div class="filter-row">
+        <label class="date-filter">
+          <span class="text-secondary">From</span>
+          <input v-model="fromDate" class="input" type="date" />
+        </label>
+        <label class="date-filter">
+          <span class="text-secondary">To</span>
+          <input v-model="toDate" class="input" type="date" />
+        </label>
       </div>
       <div class="filter-row">
         <input v-model.trim="actorId" class="input" placeholder="Admin ID (optional)" />
+        <select v-model.number="limit" class="input select-input">
+          <option :value="10">10 / page</option>
+          <option :value="20">20 / page</option>
+          <option :value="50">50 / page</option>
+        </select>
         <button class="button button-primary" type="button" :disabled="loading" @click="reload(1)">Apply Filters</button>
         <button class="button button-ghost" type="button" :disabled="loading" @click="resetFilters">Reset</button>
+        <button class="button button-ghost" type="button" :disabled="loading" @click="reload(page)">Refresh</button>
+        <button class="button button-ghost" type="button" :disabled="loading || items.length === 0" @click="exportCurrentViewCsv">
+          Export CSV
+        </button>
       </div>
+      <div class="chip-row">
+        <button
+          v-for="preset in actionPresets"
+          :key="preset"
+          class="chip filter-chip"
+          :class="{ 'filter-chip-active': action === preset }"
+          type="button"
+          @click="applyActionPreset(preset)"
+        >
+          {{ preset }}
+        </button>
+      </div>
+    </div>
+
+    <div v-if="notice.message" class="card notice-card" :class="notice.kind === 'success' ? 'notice-success' : 'notice-error'">
+      {{ notice.message }}
     </div>
 
     <div v-if="error" class="card">
@@ -42,7 +77,12 @@
             <div class="section-title">{{ item.action }}</div>
             <p class="text-secondary">{{ formatDate(item.createdAt) }}</p>
           </div>
-          <span class="chip chip-info">{{ item.targetType }}</span>
+          <div class="head-chips">
+            <span class="chip chip-info">{{ item.targetType }}</span>
+            <button class="button button-ghost tiny-button" type="button" @click="copyLog(item)">
+              Copy JSON
+            </button>
+          </div>
         </div>
 
         <p class="text-secondary">
@@ -82,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../../components/AppHeader.vue'
 import { api } from '../../services/api'
@@ -96,10 +136,31 @@ const q = ref('')
 const action = ref('')
 const targetType = ref('')
 const actorId = ref('')
+const fromDate = ref('')
+const toDate = ref('')
 const page = ref(1)
 const totalPages = ref(1)
 const total = ref(0)
+const limit = ref(20)
 const items = ref<AdminAuditLog[]>([])
+const notice = ref<{ kind: 'success' | 'error'; message: string }>({ kind: 'success', message: '' })
+let noticeTimer: ReturnType<typeof setTimeout> | null = null
+const actionPresets = [
+  'FLEET_CREATE_VEHICLE',
+  'FLEET_ASSIGN_DRIVER',
+  'RIDE_FORCE_CANCEL',
+  'PAYMENT_VERIFY',
+  'SUPPORT_TICKET_STATUS_UPDATE',
+  'SAFETY_ESCALATE'
+]
+
+function setNotice(kind: 'success' | 'error', message: string) {
+  notice.value = { kind, message }
+  if (noticeTimer) clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => {
+    notice.value.message = ''
+  }, 3200)
+}
 
 function shortId(value: string) {
   return value.slice(0, 8)
@@ -128,8 +189,10 @@ async function reload(nextPage = page.value) {
       action: action.value || undefined,
       targetType: targetType.value || undefined,
       actorId: actorId.value || undefined,
+      from: fromDate.value || undefined,
+      to: toDate.value || undefined,
       page: nextPage,
-      limit: 15
+      limit: limit.value
     })
     items.value = res.items
     page.value = res.page
@@ -142,16 +205,88 @@ async function reload(nextPage = page.value) {
   }
 }
 
+function applyActionPreset(value: string) {
+  action.value = action.value === value ? '' : value
+  reload(1)
+}
+
+function toCsvCell(value: unknown) {
+  const text = typeof value === 'string' ? value : value == null ? '' : String(value)
+  return `"${text.replaceAll('"', '""')}"`
+}
+
+function exportCurrentViewCsv() {
+  const headers = ['id', 'createdAt', 'action', 'targetType', 'targetId', 'adminId', 'adminName', 'adminPhone', 'summary']
+  const rows = items.value.map((item) => [
+    item.id,
+    item.createdAt,
+    item.action,
+    item.targetType,
+    item.targetId ?? '',
+    item.admin.id,
+    item.admin.name,
+    item.admin.phone,
+    item.summary ?? ''
+  ])
+  const csv = [headers, ...rows].map((row) => row.map((cell) => toCsvCell(cell)).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const filename = `admin-audit-logs-page-${page.value}.csv`
+
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    setNotice('error', 'CSV export is unavailable in this environment')
+    return
+  }
+  const href = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = href
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  URL.revokeObjectURL(href)
+  setNotice('success', `Exported ${items.value.length} logs to ${filename}`)
+}
+
+async function copyLog(item: AdminAuditLog) {
+  const payload = JSON.stringify(item, null, 2)
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(payload)
+      setNotice('success', `Copied log ${shortId(item.id)} to clipboard`)
+      return
+    }
+    if (typeof document !== 'undefined') {
+      const textArea = document.createElement('textarea')
+      textArea.value = payload
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setNotice('success', `Copied log ${shortId(item.id)} to clipboard`)
+      return
+    }
+    setNotice('error', 'Clipboard is unavailable in this environment')
+  } catch {
+    setNotice('error', 'Failed to copy log JSON')
+  }
+}
+
 function resetFilters() {
   q.value = ''
   action.value = ''
   targetType.value = ''
   actorId.value = ''
+  fromDate.value = ''
+  toDate.value = ''
   reload(1)
 }
 
 onMounted(() => {
   reload(1)
+})
+
+onUnmounted(() => {
+  if (noticeTimer) clearTimeout(noticeTimer)
 })
 </script>
 
@@ -184,6 +319,30 @@ onMounted(() => {
   min-width: 180px;
 }
 
+.date-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  cursor: pointer;
+}
+
+.filter-chip-active {
+  background: #1e3a8a;
+  color: #f8fafc;
+}
+
 .log-card {
   display: flex;
   flex-direction: column;
@@ -200,6 +359,17 @@ onMounted(() => {
 .chip-info {
   background: #eaf2ff;
   color: #1f4d8f;
+}
+
+.head-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tiny-button {
+  min-height: 32px;
+  padding: 6px 10px;
 }
 
 .json-box {
@@ -230,7 +400,33 @@ onMounted(() => {
   gap: 12px;
 }
 
+.notice-card {
+  border-width: 1px;
+  border-style: solid;
+}
+
+.notice-success {
+  border-color: #0f766e;
+  background: #f0fdfa;
+  color: #115e59;
+}
+
+.notice-error {
+  border-color: #9f1239;
+  background: #fff1f2;
+  color: #881337;
+}
+
 @media (max-width: 720px) {
+  .log-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .head-chips {
+    justify-content: space-between;
+  }
+
   .pagination {
     flex-direction: column;
     align-items: stretch;

@@ -225,6 +225,8 @@ export const api = {
     action?: string
     targetType?: string
     q?: string
+    from?: string
+    to?: string
     page?: number
     limit?: number
   } = {}) => {
@@ -233,6 +235,8 @@ export const api = {
     if (params.action) query.set('action', params.action)
     if (params.targetType) query.set('targetType', params.targetType)
     if (params.q) query.set('q', params.q)
+    if (params.from) query.set('from', params.from)
+    if (params.to) query.set('to', params.to)
     query.set('page', String(params.page ?? 1))
     query.set('limit', String(params.limit ?? 20))
     return request<AdminAuditLogsResponse>(`/admin/audit-logs?${query.toString()}`)

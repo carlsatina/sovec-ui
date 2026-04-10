@@ -155,7 +155,9 @@ onMounted(async () => {
     try {
       const me = await api.me()
       auth.$patch({ token, user: me })
-      destination = me.role === 'DRIVER' ? '/driver/home' : '/home'
+      if (me.role === 'ADMIN') destination = '/admin'
+      else if (me.role === 'DRIVER') destination = '/driver/home'
+      else destination = '/home'
     } catch {
       localStorage.removeItem('auth_token')
       auth.$patch({ token: null, user: null })

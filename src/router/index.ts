@@ -162,8 +162,7 @@ router.beforeEach((to) => {
     return true
   }
 
-  const devRole = localStorage.getItem('solvec_dev_role') ?? 'PASSENGER'
-  const isDriver = devRole === 'DRIVER'
+  const isDriver = tokenRole === 'DRIVER'
 
   // Drivers trying to access passenger-only pages → redirect to driver home
   if (!to.meta.driverApp && to.path !== '/account' && to.path !== '/help' && isDriver) {

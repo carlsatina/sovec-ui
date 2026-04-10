@@ -40,7 +40,8 @@ async function handleVerify() {
   }
   try {
     await auth.verifyOtp(phone, code)
-    const destination = auth.user?.role === 'DRIVER' ? '/driver/home' : '/home'
+    const role = auth.user?.role
+    const destination = role === 'ADMIN' ? '/admin' : role === 'DRIVER' ? '/driver/home' : '/home'
     router.push(destination)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'OTP verification failed.'
