@@ -240,7 +240,7 @@ import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { decodePolyline } from '../../utils/polyline'
-import { computeBearing, createRotatedCarIcon, getDefaultCarIcon } from '../../utils/mapIcons'
+import { computeBearing } from '../../utils/mapIcons'
 
 const router = useRouter()
 const booking = useBookingStore()
@@ -301,11 +301,9 @@ const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const etaDurationMin = ref<number | null>(null)
 const routeDistanceKm = ref<number | null>(null)
 
-// Directional car icon — tracks bearing between location updates
+// Directional car icon — bearing tracked for web Symbol rotation
 const driverBearing = ref(0)
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
-// Initialised lazily so the DOM (canvas) is available
-const carIconUrl = ref('')
 
 const mapCenter = computed(() =>
   booking.driverLocation
@@ -322,10 +320,11 @@ const mapMarkers = computed(() => {
     markers.push({
       ...booking.driverLocation,
       title: 'Driver',
-      // bearing → web map uses SVG Symbol (reliable); iconUrl/iconSize → native uses canvas PNG
+      // bearing → web map uses SVG Symbol with rotation (reliable on JS API)
+      // iconUrl → native Capacitor plugin; must be an HTTPS URL (data: URIs not supported)
       bearing: driverBearing.value,
-      iconUrl: carIconUrl.value || getDefaultCarIcon(),
-      iconSize: { width: 64, height: 64 },
+      iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png',
+      iconSize: { width: 36, height: 36 },
     })
   }
   if (booking.pickup) markers.push({ lat: booking.pickup.lat, lng: booking.pickup.lng, title: 'Pickup' })
@@ -391,7 +390,6 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null | undef
     // Only update bearing if the car actually moved (avoids jitter on tiny GPS noise)
     if (dist > 0.00005) {
       driverBearing.value = computeBearing(prevDriverLocation.value, newLoc)
-      carIconUrl.value = createRotatedCarIcon(driverBearing.value)
     }
   }
   prevDriverLocation.value = { ...newLoc }
@@ -403,9 +401,6 @@ watch(() => booking.driverLocation, (newLoc) => {
 })
 
 onMounted(() => {
-  // Initialise canvas-based default icon now that the DOM is ready
-  carIconUrl.value = getDefaultCarIcon()
-
   if (booking.rideId) {
     // Always re-emit join so a reconnected socket is back in the ride room
     const socket = getSocket()

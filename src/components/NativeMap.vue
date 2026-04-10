@@ -214,34 +214,24 @@ function syncWebOverlays() {
       position: { lat: item.lat, lng: item.lng },
       title: item.title,
       draggable: item.draggable ?? false,
-      // When a bearing is supplied the marker is a directional vehicle icon.
-      // We use a Google Maps Symbol (SVG path) which renders reliably on web
-      // without any image loading — data: URIs are not guaranteed to render
-      // in google.maps.Marker on all browsers/versions.
-      // For plain HTTPS icon URLs we keep the standard { url, scaledSize } form.
-      icon: (() => {
-        if (item.bearing !== undefined) {
-          // Top-down car silhouette pointing north at rotation=0.
-          // Path coords: centered at origin, front of car = negative Y (top).
-          return {
-            path: 'M 0,-11 L 6,-5 L 6,9 L -6,9 L -6,-5 Z',
+      // Driver markers pass `bearing` → use a built-in Google Maps Symbol with
+      // rotation. SymbolPath.FORWARD_CLOSED_ARROW is a native enum value that
+      // renders reliably on every browser/Maps version without any image loading.
+      // data: URI icons do NOT render reliably in google.maps.Marker on web.
+      // Other markers with an HTTPS iconUrl use the standard { url, scaledSize }.
+      icon: item.bearing !== undefined
+        ? {
+            path: g.SymbolPath.FORWARD_CLOSED_ARROW,
             fillColor: '#60B45A',
             fillOpacity: 1,
             strokeColor: '#FFFFFF',
             strokeWeight: 2,
-            scale: 1.6,
+            scale: 6,
             rotation: item.bearing,
-            anchor: new g.Point(0, 0),
           }
-        }
-        if (item.iconUrl) {
-          return {
-            url: item.iconUrl,
-            scaledSize: item.iconSize ? new g.Size(item.iconSize.width, item.iconSize.height) : undefined,
-          }
-        }
-        return undefined
-      })(),
+        : item.iconUrl
+          ? { url: item.iconUrl, scaledSize: item.iconSize ? new g.Size(item.iconSize.width, item.iconSize.height) : undefined }
+          : undefined,
       map: webMap.value
     })
     if (item.draggable) {

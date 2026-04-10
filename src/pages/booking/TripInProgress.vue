@@ -69,7 +69,7 @@ import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { decodePolyline } from '../../utils/polyline'
-import { computeBearing, createRotatedCarIcon, getDefaultCarIcon } from '../../utils/mapIcons'
+import { computeBearing } from '../../utils/mapIcons'
 
 const router = useRouter()
 const booking = useBookingStore()
@@ -78,10 +78,9 @@ const auth = useAuthStore()
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const etaDurationMin = ref<number | null>(null)
 
-// Directional car icon
+// Directional car icon — bearing tracked for web Symbol rotation
 const driverBearing = ref(0)
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
-const carIconUrl = ref('')   // initialised on mount once canvas is available
 
 const mapCenter = computed(() =>
   booking.driverLocation
@@ -101,10 +100,11 @@ const mapMarkers = computed(() => {
     markers.push({
       ...booking.driverLocation,
       title: 'Driver',
-      // bearing → web map uses SVG Symbol (reliable); iconUrl/iconSize → native uses canvas PNG
+      // bearing → web map uses SVG Symbol with rotation (reliable on JS API)
+      // iconUrl → native Capacitor plugin; must be an HTTPS URL (data: URIs not supported)
       bearing: driverBearing.value,
-      iconUrl: carIconUrl.value || getDefaultCarIcon(),
-      iconSize: { width: 64, height: 64 },
+      iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png',
+      iconSize: { width: 36, height: 36 },
     })
   }
   if (booking.dropoff) markers.push({ lat: booking.dropoff.lat, lng: booking.dropoff.lng, title: 'Drop-off' })
@@ -120,7 +120,6 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null | undef
     )
     if (dist > 0.00005) {
       driverBearing.value = computeBearing(prevDriverLocation.value, newLoc)
-      carIconUrl.value = createRotatedCarIcon(driverBearing.value)
     }
   }
   prevDriverLocation.value = { ...newLoc }
@@ -186,7 +185,6 @@ onMounted(() => {
       void booking.refreshRideDetails(booking.rideId)
     }
   }
-  carIconUrl.value = getDefaultCarIcon()
   if (booking.driverLocation) {
     prevDriverLocation.value = { ...booking.driverLocation }
   }
