@@ -1,19 +1,20 @@
 <template>
   <div class="incoming-overlay">
     <div class="incoming-card">
+
       <!-- Header -->
       <div class="card-header">
         <div class="request-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#f5a623" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
+          <div class="badge-dot" aria-hidden="true"></div>
           New Ride Request
         </div>
         <!-- Countdown ring -->
-        <div class="countdown-wrap" aria-label="`${timeLeft} seconds to respond`">
+        <div class="countdown-wrap" :aria-label="`${timeLeft} seconds to respond`">
           <svg class="countdown-svg" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+            <circle cx="22" cy="22" r="18" fill="none" stroke="#EDE8E0" stroke-width="3"/>
             <circle
               cx="22" cy="22" r="18"
-              fill="none" stroke="#00c4bc" stroke-width="3"
+              fill="none" stroke="#60B45A" stroke-width="3"
               stroke-linecap="round"
               :stroke-dasharray="`${circumference}`"
               :stroke-dashoffset="`${dashOffset}`"
@@ -25,29 +26,29 @@
         </div>
       </div>
 
-      <!-- Passenger info -->
+      <!-- Passenger + fare -->
       <div class="passenger-row">
         <div class="passenger-avatar" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D7A38" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
-        <div>
+        <div class="passenger-info">
           <div class="passenger-name">{{ passengerName }}</div>
-          <div class="passenger-rating">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#f5a623" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          <div class="passenger-sub">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#D4A017" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
             {{ passengerPhone || 'Phone unavailable' }}
           </div>
         </div>
         <div class="fare-badge">
-          <div class="fare-amount">PHP {{ fareEstimate }}</div>
-          <div class="fare-label">Estimated</div>
+          <div class="fare-amount">₱{{ fareEstimate }}</div>
+          <div class="fare-label">Est. fare</div>
         </div>
       </div>
 
-      <!-- Route -->
+      <!-- Route card -->
       <div class="route-card">
-        <div class="connector-line" aria-hidden="true"></div>
+        <div class="route-connector" aria-hidden="true"></div>
         <div class="route-row">
-          <span class="rdot rdot-teal" aria-hidden="true"></span>
+          <span class="rdot rdot-green" aria-hidden="true"></span>
           <div class="route-body">
             <div class="route-label">Pickup · {{ distanceToPickup }}</div>
             <div class="route-address">{{ pickupShort }}</div>
@@ -62,13 +63,13 @@
         </div>
       </div>
 
-      <!-- Payment chip -->
-      <a v-if="passengerPhone" class="payment-chip" :href="`tel:${passengerPhone}`">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <!-- Call chip -->
+      <a v-if="passengerPhone" class="call-chip" :href="`tel:${passengerPhone}`">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D7A38" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
         Call Passenger
       </a>
-      <div v-else class="payment-chip no-link">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <div v-else class="call-chip call-chip-disabled">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
         Phone unavailable
       </div>
 
@@ -82,6 +83,7 @@
           {{ driver.loading ? 'Accepting…' : 'Accept Ride' }}
         </button>
       </div>
+
     </div>
   </div>
 </template>
@@ -126,17 +128,15 @@ const passengerPhone = computed(() => driver.currentRide?.rider?.phone ?? '')
 
 const distanceToPickup = computed(() => {
   if (!driver.currentRide || !driver.driverLocation) return '—'
-  const lat1 = driver.driverLocation.lat
-  const lng1 = driver.driverLocation.lng
-  const lat2 = driver.currentRide.pickupLat
-  const lng2 = driver.currentRide.pickupLng
+  const lat1 = driver.driverLocation.lat, lng1 = driver.driverLocation.lng
+  const lat2 = driver.currentRide.pickupLat, lng2 = driver.currentRide.pickupLng
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLng = ((lng2 - lng1) * Math.PI) / 180
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2
-  const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return `${km.toFixed(1)} km`
+  return `${(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1)} km`
 })
+
 const tripDistance = computed(() => {
   if (!driver.currentRide) return '--'
   const lat1 = driver.currentRide.pickupLat, lng1 = driver.currentRide.pickupLng
@@ -145,8 +145,7 @@ const tripDistance = computed(() => {
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLng = ((lng2 - lng1) * Math.PI) / 180
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2
-  const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return `${km.toFixed(1)} km`
+  return `${(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1)} km`
 })
 
 async function accept() {
@@ -179,23 +178,22 @@ async function autoDecline() {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(7,21,36,0.85);
-  backdrop-filter: blur(6px);
+  background: rgba(245,242,238,0.55);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-end;
-  padding: 0;
 }
 
 .incoming-card {
   width: 100%;
-  background: #0c2233;
+  background: #fff;
   border-radius: 28px 28px 0 0;
-  padding: 20px 20px 36px;
+  padding: 20px 20px 40px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: 0 -12px 48px rgba(0,196,188,0.15);
-  border-top: 1px solid rgba(0,196,188,0.2);
+  box-shadow: 0 -12px 48px rgba(0,0,0,0.12);
+  border-top: 1.5px solid #EDE8E0;
   animation: slide-up 0.35s cubic-bezier(0.22,1,0.36,1) both;
 }
 
@@ -204,7 +202,7 @@ async function autoDecline() {
   to   { transform: translateY(0); }
 }
 
-/* Header */
+/* ── Header ── */
 .card-header {
   display: flex;
   align-items: center;
@@ -214,15 +212,30 @@ async function autoDecline() {
 .request-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
-  font-weight: 700;
-  color: #f5a623;
+  font-weight: 800;
+  color: #3D7A38;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-/* Countdown */
+.badge-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #60B45A;
+  box-shadow: 0 0 0 3px rgba(96,180,90,0.20);
+  animation: blink 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── Countdown ── */
 .countdown-wrap {
   position: relative;
   width: 44px;
@@ -242,11 +255,11 @@ async function autoDecline() {
 .countdown-num {
   font-size: 14px;
   font-weight: 800;
-  color: #00c4bc;
+  color: #3D7A38;
   z-index: 1;
 }
 
-/* Passenger */
+/* ── Passenger row ── */
 .passenger-row {
   display: flex;
   align-items: center;
@@ -257,51 +270,55 @@ async function autoDecline() {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(0,196,188,0.12);
-  border: 1.5px solid rgba(0,196,188,0.25);
+  background: rgba(96,180,90,0.10);
+  border: 1.5px solid rgba(96,180,90,0.22);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+.passenger-info { flex: 1; min-width: 0; }
+
 .passenger-name {
   font-size: 16px;
   font-weight: 700;
-  color: #fff;
+  color: #111827;
 }
 
-.passenger-rating {
+.passenger-sub {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: rgba(255,255,255,0.5);
+  color: #9CA3AF;
   margin-top: 2px;
 }
 
 .fare-badge {
-  margin-left: auto;
   text-align: right;
+  flex-shrink: 0;
 }
 
 .fare-amount {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  color: #fff;
+  color: #111827;
   letter-spacing: -0.02em;
 }
 
 .fare-label {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* Route card */
+/* ── Route card ── */
 .route-card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: #F5F2EE;
+  border: 1.5px solid #EDE8E0;
   border-radius: 18px;
   padding: 14px 16px;
   display: flex;
@@ -310,7 +327,7 @@ async function autoDecline() {
   position: relative;
 }
 
-.connector-line {
+.route-connector {
   position: absolute;
   left: 23px;
   top: 30px;
@@ -318,7 +335,7 @@ async function autoDecline() {
   width: 2px;
   background: repeating-linear-gradient(
     to bottom,
-    #00c4bc 0px, #00c4bc 4px,
+    #60B45A 0px, #60B45A 4px,
     transparent 4px, transparent 9px
   );
 }
@@ -340,46 +357,55 @@ async function autoDecline() {
   z-index: 1;
 }
 
-.rdot-teal { background: #00c4bc; box-shadow: 0 0 0 3px rgba(0,196,188,0.2); }
-.rdot-gold { background: #f5a623; border-radius: 2px; box-shadow: 0 0 0 3px rgba(245,166,35,0.2); }
+.rdot-green { background: #60B45A; box-shadow: 0 0 0 3px rgba(96,180,90,0.18); }
+.rdot-gold  { background: #D4A017; border-radius: 2px; box-shadow: 0 0 0 3px rgba(212,160,23,0.18); }
 
 .route-label {
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255,255,255,0.4);
+  color: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .route-address {
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Payment chip */
-.payment-chip {
+/* ── Call chip ── */
+.call-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
+  gap: 7px;
+  padding: 8px 16px;
+  background: rgba(96,180,90,0.08);
+  border: 1.5px solid rgba(96,180,90,0.22);
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255,255,255,0.6);
+  color: #3D7A38;
   align-self: flex-start;
   text-decoration: none;
+  transition: background 0.15s;
 }
 
-.payment-chip.no-link { cursor: default; }
+.call-chip:active { background: rgba(96,180,90,0.16); }
 
-/* Actions */
+.call-chip-disabled {
+  color: #9CA3AF;
+  background: #F5F2EE;
+  border-color: #EDE8E0;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Actions ── */
 .actions {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -390,23 +416,23 @@ async function autoDecline() {
   height: 54px;
   padding: 0 24px;
   border-radius: 999px;
-  border: 2px solid rgba(239,68,68,0.35);
-  background: rgba(254,242,242,0.06);
-  color: #f87171;
+  border: 1.5px solid rgba(197,48,48,0.30);
+  background: #fff;
+  color: #C53030;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.decline-btn:active { background: rgba(239,68,68,0.12); }
+.decline-btn:active { background: #FFF5F5; }
 .decline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .accept-btn {
   height: 54px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff;
   font-size: 16px;
   font-weight: 800;
@@ -415,10 +441,10 @@ async function autoDecline() {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,196,188,0.35);
+  box-shadow: 0 8px 24px rgba(96,180,90,0.35);
   transition: opacity 0.15s, transform 0.12s;
 }
 
-.accept-btn:active { opacity: 0.9; transform: scale(0.98); }
+.accept-btn:active  { opacity: 0.92; transform: scale(0.98); }
 .accept-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 </style>

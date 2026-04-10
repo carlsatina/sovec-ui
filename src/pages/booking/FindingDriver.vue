@@ -46,17 +46,17 @@
           <div class="radar-ring radar-ring-1"></div>
           <div class="radar-car">
             <svg viewBox="0 0 64 32" fill="none" class="radar-car-svg">
-              <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#00c4bc"/>
-              <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#00908a"/>
-              <path d="M20 14 C21 9 24 7 31 7 L31 14Z" fill="rgba(220,255,255,0.55)"/>
-              <path d="M33 14 L33 7 C40 7 43 9 44 14Z" fill="rgba(220,255,255,0.55)"/>
-              <circle cx="15" cy="26" r="4" fill="#071524"/>
-              <circle cx="15" cy="26" r="1.8" fill="#00c4bc"/>
-              <circle cx="49" cy="26" r="4" fill="#071524"/>
-              <circle cx="49" cy="26" r="1.8" fill="#00c4bc"/>
+              <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#60B45A"/>
+              <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#3D7A38"/>
+              <path d="M20 14 C21 9 24 7 31 7 L31 14Z" fill="rgba(200,240,200,0.55)"/>
+              <path d="M33 14 L33 7 C40 7 43 9 44 14Z" fill="rgba(200,240,200,0.55)"/>
+              <circle cx="15" cy="26" r="4" fill="#2D3A2D"/>
+              <circle cx="15" cy="26" r="1.8" fill="#60B45A"/>
+              <circle cx="49" cy="26" r="4" fill="#2D3A2D"/>
+              <circle cx="49" cy="26" r="1.8" fill="#60B45A"/>
               <rect x="59" y="16" width="3" height="3" rx="1.5" fill="#fde68a"/>
               <rect x="2"  y="16" width="3" height="3" rx="1.5" fill="#f87171" opacity="0.7"/>
-              <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#f5a623"/>
+              <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#D4A017"/>
             </svg>
           </div>
         </div>
@@ -78,14 +78,14 @@
           <div class="trip-brand">
             <div class="trip-logo" aria-hidden="true">
               <svg viewBox="0 0 64 32" fill="none" class="trip-car-svg">
-                <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#00c4bc"/>
-                <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#00908a"/>
-                <circle cx="15" cy="26" r="4" fill="#071524"/>
-                <circle cx="15" cy="26" r="1.8" fill="#00c4bc"/>
-                <circle cx="49" cy="26" r="4" fill="#071524"/>
-                <circle cx="49" cy="26" r="1.8" fill="#00c4bc"/>
+                <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#60B45A"/>
+                <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#3D7A38"/>
+                <circle cx="15" cy="26" r="4" fill="#2D3A2D"/>
+                <circle cx="15" cy="26" r="1.8" fill="#60B45A"/>
+                <circle cx="49" cy="26" r="4" fill="#2D3A2D"/>
+                <circle cx="49" cy="26" r="1.8" fill="#60B45A"/>
                 <rect x="59" y="16" width="3" height="3" rx="1.5" fill="#fde68a"/>
-                <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#f5a623"/>
+                <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#D4A017"/>
               </svg>
             </div>
             <div>
@@ -139,7 +139,7 @@
       <transition name="details">
         <button v-if="expanded" class="support-row" type="button">
           <span class="support-icon-wrap" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c4bc" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 011 1.22 2 2 0 012.92 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60B45A" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 011 1.22 2 2 0 012.92 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
           </span>
           <span class="support-label">Service &amp; support</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>
@@ -412,18 +412,19 @@ onBeforeUnmount(() => {
   height: 40px;
   border-radius: 12px;
   border: none;
-  background: rgba(7, 21, 36, 0.72);
-  backdrop-filter: blur(8px);
-  color: #fff;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(10px);
+  color: #374151;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
   cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
   transition: background 0.15s;
 }
 
-.map-back:active { background: rgba(7, 21, 36, 0.9); }
+.map-back:active { background: rgba(255,255,255,1); }
 
 /* Pickup chip */
 .pickup-chip {
@@ -431,9 +432,9 @@ onBeforeUnmount(() => {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(7, 21, 36, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(0,196,188,0.25);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(96,180,90,0.25);
   border-radius: 999px;
   padding: 9px 18px 9px 14px;
   display: flex;
@@ -441,12 +442,12 @@ onBeforeUnmount(() => {
   gap: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #fff;
+  color: #111827;
   white-space: nowrap;
   max-width: 80%;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
   z-index: 5;
 }
 
@@ -454,8 +455,8 @@ onBeforeUnmount(() => {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #00c4bc;
-  box-shadow: 0 0 0 3px rgba(0,196,188,0.3);
+  background: #60B45A;
+  box-shadow: 0 0 0 3px rgba(96,180,90,0.25);
   flex-shrink: 0;
 }
 
@@ -468,7 +469,7 @@ onBeforeUnmount(() => {
   z-index: 20;
   border-radius: 28px 28px 0 0;
   padding: 0 16px 32px;
-  background: #f1f5f8;
+  background: #F5F2EE;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -476,7 +477,7 @@ onBeforeUnmount(() => {
   max-height: min(92vh, calc(100vh - 12px));
   overflow-y: auto;
   overscroll-behavior: contain;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.10);
 }
 
 .sheet-grabber {
@@ -517,7 +518,7 @@ onBeforeUnmount(() => {
 .radar-ring {
   position: absolute;
   border-radius: 50%;
-  border: 2px solid rgba(0,196,188,0.35);
+  border: 2px solid rgba(96,180,90,0.30);
   animation: radar-pulse 2.4s ease-out infinite;
 }
 
@@ -526,7 +527,7 @@ onBeforeUnmount(() => {
 .radar-ring-3 { width: 120px; height: 120px; animation-delay: 1.2s; }
 
 @keyframes radar-pulse {
-  0%   { opacity: 0.8; transform: scale(0.6); }
+  0%   { opacity: 0.9; transform: scale(0.6); }
   70%  { opacity: 0.2; }
   100% { opacity: 0;   transform: scale(1); }
 }
@@ -536,7 +537,7 @@ onBeforeUnmount(() => {
   height: 28px;
   z-index: 1;
   animation: car-float 2s ease-in-out infinite;
-  filter: drop-shadow(0 4px 12px rgba(0,196,188,0.4));
+  filter: drop-shadow(0 4px 12px rgba(96,180,90,0.35));
 }
 
 .radar-car-svg {
@@ -562,7 +563,7 @@ onBeforeUnmount(() => {
 }
 
 .brand-name {
-  color: #00c4bc;
+  color: #3D7A38;
 }
 
 .sheet-sub {
@@ -585,7 +586,7 @@ onBeforeUnmount(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #00c4bc;
+  background: #60B45A;
   animation: dot-bounce 1.4s ease-in-out infinite;
 }
 
@@ -601,7 +602,7 @@ onBeforeUnmount(() => {
 /* ── Trip card ── */
 .trip-card {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid #EDE8E0;
   border-radius: 20px;
   padding: 14px 14px 14px 16px;
   display: flex;
@@ -609,12 +610,13 @@ onBeforeUnmount(() => {
   gap: 12px;
   text-align: left;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .trip-card.expanded {
-  border-color: rgba(0,196,188,0.4);
-  box-shadow: 0 6px 24px rgba(0,196,188,0.1);
+  border-color: rgba(96,180,90,0.40);
+  box-shadow: 0 6px 24px rgba(96,180,90,0.10);
 }
 
 .trip-head {
@@ -635,7 +637,7 @@ onBeforeUnmount(() => {
   width: 52px;
   height: 32px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #e0fafa, #c7f4f4);
+  background: linear-gradient(135deg, #E8F5E6, #D4EDD1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -660,8 +662,8 @@ onBeforeUnmount(() => {
 }
 
 .ev-badge {
-  background: rgba(0,196,188,0.12);
-  color: #007d78;
+  background: rgba(96,180,90,0.12);
+  color: #3D7A38;
   font-size: 10px;
   font-weight: 700;
   padding: 2px 7px;
@@ -692,7 +694,7 @@ onBeforeUnmount(() => {
 
 /* ── Trip expanded details ── */
 .trip-details {
-  border-top: 1px solid #f1f5f8;
+  border-top: 1px solid #EDE8E0;
   padding-top: 12px;
   display: flex;
   flex-direction: column;
@@ -714,7 +716,7 @@ onBeforeUnmount(() => {
   width: 2px;
   background: repeating-linear-gradient(
     to bottom,
-    #00c4bc 0px, #00c4bc 4px,
+    #60B45A 0px, #60B45A 4px,
     transparent 4px, transparent 9px
   );
 }
@@ -737,14 +739,14 @@ onBeforeUnmount(() => {
 }
 
 .dot-pickup {
-  background: #00c4bc;
-  box-shadow: 0 0 0 3px rgba(0,196,188,0.15);
+  background: #60B45A;
+  box-shadow: 0 0 0 3px rgba(96,180,90,0.18);
 }
 
 .dot-dropoff {
-  background: #f5a623;
+  background: #D4A017;
   border-radius: 3px;
-  box-shadow: 0 0 0 3px rgba(245,166,35,0.15);
+  box-shadow: 0 0 0 3px rgba(212,160,23,0.18);
 }
 
 .line-label {
@@ -776,7 +778,7 @@ onBeforeUnmount(() => {
 }
 
 .payment-row {
-  border-top: 1px solid #f1f5f8;
+  border-top: 1px solid #EDE8E0;
   padding-top: 10px;
   display: flex;
   align-items: center;
@@ -802,23 +804,24 @@ onBeforeUnmount(() => {
 /* ── Support row ── */
 .support-row {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid #EDE8E0;
   border-radius: 16px;
   padding: 13px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
   transition: background 0.15s;
 }
 
-.support-row:active { background: #f8fffe; border-color: #00c4bc; }
+.support-row:active { background: #F4FBF3; border-color: rgba(96,180,90,0.4); }
 
 .support-icon-wrap {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: rgba(0,196,188,0.1);
+  background: rgba(96,180,90,0.10);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -840,10 +843,10 @@ onBeforeUnmount(() => {
   gap: 8px;
   width: 100%;
   height: 50px;
-  border: 2px solid rgba(239,68,68,0.3);
+  border: 1.5px solid rgba(197,48,48,0.25);
   border-radius: 999px;
-  background: rgba(254,242,242,0.8);
-  color: #dc2626;
+  background: #fff;
+  color: #C53030;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -851,8 +854,8 @@ onBeforeUnmount(() => {
 }
 
 .cancel-btn:active {
-  background: #fee2e2;
-  border-color: #dc2626;
+  background: #FFF5F5;
+  border-color: #C53030;
 }
 
 .cancel-btn:disabled {

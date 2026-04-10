@@ -65,15 +65,23 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NativeMap from '../../components/NativeMap.vue'
 import { useBookingStore } from '../../store/booking'
+import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
+import { getSocket } from '../../services/socket'
 import { decodePolyline } from '../../utils/polyline'
+import { computeBearing, createRotatedCarIcon, getDefaultCarIcon } from '../../utils/mapIcons'
 
 const router = useRouter()
 const booking = useBookingStore()
+const auth = useAuthStore()
 
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const etaDurationMin = ref<number | null>(null)
-const carMarkerIcon = 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png'
+
+// Directional car icon
+const driverBearing = ref(0)
+const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
+const carIconUrl = ref('')   // initialised on mount once canvas is available
 
 const mapCenter = computed(() =>
   booking.driverLocation
@@ -87,18 +95,36 @@ const mapMarkers = computed(() => {
     title?: string
     iconUrl?: string
     iconSize?: { width: number; height: number }
+    bearing?: number
   }> = []
   if (booking.driverLocation) {
     markers.push({
       ...booking.driverLocation,
       title: 'Driver',
-      iconUrl: carMarkerIcon,
-      iconSize: { width: 36, height: 36 }
+      // bearing → web map uses SVG Symbol (reliable); iconUrl/iconSize → native uses canvas PNG
+      bearing: driverBearing.value,
+      iconUrl: carIconUrl.value || getDefaultCarIcon(),
+      iconSize: { width: 64, height: 64 },
     })
   }
   if (booking.dropoff) markers.push({ lat: booking.dropoff.lat, lng: booking.dropoff.lng, title: 'Drop-off' })
   return markers
 })
+
+function updateDriverBearing(newLoc: { lat: number; lng: number } | null | undefined) {
+  if (!newLoc) return
+  if (prevDriverLocation.value) {
+    const dist = Math.hypot(
+      newLoc.lat - prevDriverLocation.value.lat,
+      newLoc.lng - prevDriverLocation.value.lng
+    )
+    if (dist > 0.00005) {
+      driverBearing.value = computeBearing(prevDriverLocation.value, newLoc)
+      carIconUrl.value = createRotatedCarIcon(driverBearing.value)
+    }
+  }
+  prevDriverLocation.value = { ...newLoc }
+}
 
 const etaText = computed(() => etaDurationMin.value != null ? `~${etaDurationMin.value} min` : null)
 const dropoffShort = computed(() => booking.dropoff?.address?.split(',')[0] ?? '')
@@ -142,14 +168,27 @@ async function fetchLiveEta() {
   }
 }
 
-watch(() => booking.driverLocation, fetchLiveEta)
+watch(() => booking.driverLocation, (newLoc) => {
+  updateDriverBearing(newLoc)
+  fetchLiveEta()
+})
 
 onMounted(() => {
-  if (booking.rideId && !booking.hasActiveSubscription) {
-    booking.resubscribeToRideUpdates(booking.rideId)
+  if (booking.rideId) {
+    // Always re-emit join so a reconnected socket is back in the ride room
+    const socket = getSocket()
+    socket.emit('join', { userId: auth.user?.id, rideId: booking.rideId })
+
+    if (!booking.hasActiveSubscription) {
+      booking.resubscribeToRideUpdates(booking.rideId)
+    }
+    if (!booking.assignedDriver) {
+      void booking.refreshRideDetails(booking.rideId)
+    }
   }
-  if (booking.rideId && !booking.assignedDriver) {
-    void booking.refreshRideDetails(booking.rideId)
+  carIconUrl.value = getDefaultCarIcon()
+  if (booking.driverLocation) {
+    prevDriverLocation.value = { ...booking.driverLocation }
   }
   fetchRoute()
   fetchLiveEta()

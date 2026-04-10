@@ -48,22 +48,26 @@ export const useDriverStore = defineStore('driver', () => {
 
   // ── Location polling ──────────────────────────────────────────────────────
 
+  function broadcastCurrentLocation(driverId: string) {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords
+      driverLocation.value = { lat, lng }
+      await api.driverUpdateLocation(driverId, lat, lng)
+
+      // Broadcast live position to active ride room so passenger map updates
+      if (currentRide.value) {
+        const socket = getSocket()
+        socket.emit('driver:location_update', { rideId: currentRide.value.id, lat, lng })
+      }
+    })
+  }
+
   function startLocationPolling(driverId: string) {
     stopLocationPolling()
-    locationInterval = setInterval(async () => {
-      if (!navigator.geolocation) return
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords
-        driverLocation.value = { lat, lng }
-        await api.driverUpdateLocation(driverId, lat, lng)
-
-        // Broadcast live position to active ride room so passenger map updates
-        if (currentRide.value) {
-          const socket = getSocket()
-          socket.emit('driver:location_update', { rideId: currentRide.value.id, lat, lng })
-        }
-      })
-    }, 8000)
+    // Fire immediately so the passenger sees the car icon right away
+    broadcastCurrentLocation(driverId)
+    locationInterval = setInterval(() => broadcastCurrentLocation(driverId), 8000)
   }
 
   function stopLocationPolling() {
@@ -82,6 +86,11 @@ export const useDriverStore = defineStore('driver', () => {
       await api.rideUpdateStatus(currentRide.value.id, 'ARRIVING', driverId)
       rideStatus.value = 'arriving'
       arrivedAtPickup.value = false
+      // Immediately push current location so passenger sees car icon without waiting for next poll
+      if (driverLocation.value) {
+        const socket = getSocket()
+        socket.emit('driver:location_update', { rideId: currentRide.value.id, ...driverLocation.value })
+      }
     } finally {
       loading.value = false
     }

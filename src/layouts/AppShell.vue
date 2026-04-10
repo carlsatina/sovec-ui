@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell" :class="{ 'no-tabs': isDriver }">
+  <div class="app-shell" :class="{ 'no-tabs': !showTabs }">
     <router-view />
     <BottomTabBar v-if="showTabs" />
   </div>

@@ -26,6 +26,7 @@ const props = withDefaults(
       draggable?: boolean
       iconUrl?: string
       iconSize?: { width: number; height: number }
+      bearing?: number   // degrees 0-360; when set, web map uses a rotated Symbol instead of a data URL
     }>
     path?: Array<{ lat: number; lng: number }>
     interactive?: boolean
@@ -213,12 +214,34 @@ function syncWebOverlays() {
       position: { lat: item.lat, lng: item.lng },
       title: item.title,
       draggable: item.draggable ?? false,
-      icon: item.iconUrl
-        ? {
-            url: item.iconUrl,
-            scaledSize: item.iconSize ? new g.Size(item.iconSize.width, item.iconSize.height) : undefined
+      // When a bearing is supplied the marker is a directional vehicle icon.
+      // We use a Google Maps Symbol (SVG path) which renders reliably on web
+      // without any image loading — data: URIs are not guaranteed to render
+      // in google.maps.Marker on all browsers/versions.
+      // For plain HTTPS icon URLs we keep the standard { url, scaledSize } form.
+      icon: (() => {
+        if (item.bearing !== undefined) {
+          // Top-down car silhouette pointing north at rotation=0.
+          // Path coords: centered at origin, front of car = negative Y (top).
+          return {
+            path: 'M 0,-11 L 6,-5 L 6,9 L -6,9 L -6,-5 Z',
+            fillColor: '#60B45A',
+            fillOpacity: 1,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 2,
+            scale: 1.6,
+            rotation: item.bearing,
+            anchor: new g.Point(0, 0),
           }
-        : undefined,
+        }
+        if (item.iconUrl) {
+          return {
+            url: item.iconUrl,
+            scaledSize: item.iconSize ? new g.Size(item.iconSize.width, item.iconSize.height) : undefined,
+          }
+        }
+        return undefined
+      })(),
       map: webMap.value
     })
     if (item.draggable) {
