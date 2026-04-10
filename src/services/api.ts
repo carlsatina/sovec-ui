@@ -29,6 +29,8 @@ import type {
   AdminRidesResponse,
   FareConfig,
   AdminVehiclesResponse,
+  AdminVehicleHistoryAction,
+  AdminVehicleHistoryResponse,
   VehicleStatus,
   AdminAvailableDriversResponse,
   AdminPaymentsResponse,
@@ -36,6 +38,7 @@ import type {
   AdminPaymentStatus,
   AdminSupportTicketStatus,
   AdminSupportTicketsResponse,
+  AdminAuditLogsResponse,
   AdminAnalyticsOverview,
   AdminAnalyticsTrendsResponse,
   AdminSafetyIncidentStatus,
@@ -140,6 +143,13 @@ export const api = {
     query.set('limit', String(params.limit ?? 20))
     return request<AdminVehiclesResponse>(`/admin/vehicles?${query.toString()}`)
   },
+  adminGetVehicleHistory: (vehicleId: string, params: { action?: AdminVehicleHistoryAction; page?: number; limit?: number } = {}) => {
+    const query = new URLSearchParams()
+    if (params.action) query.set('action', params.action)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminVehicleHistoryResponse>(`/admin/vehicles/${encodeURIComponent(vehicleId)}/history?${query.toString()}`)
+  },
   adminGetAvailableDrivers: (params: {
     q?: string
     availableOnly?: boolean
@@ -210,6 +220,23 @@ export const api = {
   },
   adminUpdateSupportTicketStatus: (ticketId: string, status: AdminSupportTicketStatus, note?: string) =>
     request<{ ok: boolean; ticket: unknown }>(`/admin/support/tickets/${ticketId}/status`, { method: 'POST', body: { status, note } }),
+  adminGetAuditLogs: (params: {
+    actorId?: string
+    action?: string
+    targetType?: string
+    q?: string
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.actorId) query.set('actorId', params.actorId)
+    if (params.action) query.set('action', params.action)
+    if (params.targetType) query.set('targetType', params.targetType)
+    if (params.q) query.set('q', params.q)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminAuditLogsResponse>(`/admin/audit-logs?${query.toString()}`)
+  },
   adminGetAnalyticsOverview: () =>
     request<AdminAnalyticsOverview>('/admin/analytics/overview'),
   adminGetAnalyticsTrends: (days = 7) =>
@@ -240,9 +267,9 @@ export const api = {
   adminAssignSafetyIncident: (incidentId: string, payload: { assigneeId?: string; note?: string } = {}) =>
     request<{ ok: boolean; incident: unknown; assigneeId: string }>(`/admin/safety/incidents/${incidentId}/assign`, { method: 'POST', body: payload }),
   adminEscalateSafetyIncident: (incidentId: string, payload: { priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'; reason: string }) =>
-    request<{ ok: boolean; incident: unknown; priority: string }>(`/admin/safety/incidents/${incidentId}/escalate`, { method: 'POST', body: payload }),
+    request<{ ok: boolean; incident: unknown; priority: string; delivery?: { deadLetters?: number } }>(`/admin/safety/incidents/${incidentId}/escalate`, { method: 'POST', body: payload }),
   adminResolveSafetyIncident: (incidentId: string, payload: { status?: 'RESOLVED' | 'CLOSED'; action: string; note?: string }) =>
-    request<{ ok: boolean; incident: unknown; resolution: unknown }>(`/admin/safety/incidents/${incidentId}/resolve`, { method: 'POST', body: payload }),
+    request<{ ok: boolean; incident: unknown; resolution: unknown; delivery?: { deadLetters?: number } }>(`/admin/safety/incidents/${incidentId}/resolve`, { method: 'POST', body: payload }),
   adminGetSafetyTemplates: () =>
     request<AdminSafetyTemplatesResponse>('/admin/safety/templates'),
   adminUpdateSafetyTemplate: (key: AdminSafetyTemplateKey, payload: { subject?: string; body?: string }) =>

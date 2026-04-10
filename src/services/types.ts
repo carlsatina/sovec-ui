@@ -281,6 +281,36 @@ export type AdminVehiclesResponse = {
   totalPages: number
 }
 
+export type AdminVehicleHistoryAction = 'FLEET_CREATE_VEHICLE' | 'FLEET_ASSIGN_DRIVER' | 'FLEET_UPDATE_STATUS'
+
+export type AdminVehicleHistoryItem = {
+  id: string
+  adminId: string
+  action: AdminVehicleHistoryAction
+  targetType: 'VEHICLE'
+  targetId: string
+  summary?: string | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+  createdAt: string
+  admin: {
+    id: string
+    name: string
+    phone: string
+    email?: string | null
+    role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  }
+}
+
+export type AdminVehicleHistoryResponse = {
+  items: AdminVehicleHistoryItem[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
 export type AdminAvailableDriver = {
   id: string
   name: string
@@ -365,6 +395,34 @@ export type AdminSupportTicket = {
 
 export type AdminSupportTicketsResponse = {
   items: AdminSupportTicket[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type AdminAuditLog = {
+  id: string
+  adminId: string
+  action: string
+  targetType: string
+  targetId?: string | null
+  summary?: string | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+  createdAt: string
+  admin: {
+    id: string
+    name: string
+    phone: string
+    email?: string | null
+    role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  }
+}
+
+export type AdminAuditLogsResponse = {
+  items: AdminAuditLog[]
   page: number
   limit: number
   total: number

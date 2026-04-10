@@ -57,6 +57,7 @@ const AdminPayments = () => import('../pages/admin/AdminPayments.vue')
 const AdminSupport = () => import('../pages/admin/AdminSupport.vue')
 const AdminAnalytics = () => import('../pages/admin/AdminAnalytics.vue')
 const AdminSafety = () => import('../pages/admin/AdminSafety.vue')
+const AdminAuditLogs = () => import('../pages/admin/AdminAuditLogs.vue')
 
 const routes = [
   { path: '/', redirect: '/auth/splash' },
@@ -123,7 +124,8 @@ const routes = [
   { path: '/admin/payments', component: AdminPayments, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/support', component: AdminSupport, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/analytics', component: AdminAnalytics, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/safety', component: AdminSafety, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
+  { path: '/admin/safety', component: AdminSafety, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/audit-logs', component: AdminAuditLogs, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
 ]
 
 const router = createRouter({

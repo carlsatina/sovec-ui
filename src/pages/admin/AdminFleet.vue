@@ -104,12 +104,41 @@
         </div>
         <div class="row">
           <select v-model="statusByVehicle[item.id]" class="input select-input">
-            <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+            <option v-for="s in statusOptions(item.status)" :key="s" :value="s">{{ s }}</option>
           </select>
           <input v-model.number="batteryByVehicle[item.id]" class="input" type="number" min="0" max="100" placeholder="Battery %" />
           <button class="button button-primary" type="button" :disabled="busy[item.id]" @click="updateStatus(item.id)">
             {{ busy[item.id] ? 'Saving...' : 'Update Status' }}
           </button>
+        </div>
+        <div class="fleet-note text-secondary">
+          IN_USE requires assigned driver and battery ≥15%. CHARGING requires explicit battery value &lt;100%.
+        </div>
+        <div class="row">
+          <button
+            class="button button-ghost"
+            type="button"
+            :disabled="historyLoading[item.id]"
+            @click="toggleHistory(item.id)"
+          >
+            {{ historyOpen[item.id] ? 'Hide History' : 'Show History' }}
+          </button>
+        </div>
+        <div v-if="historyOpen[item.id]" class="history-panel">
+          <p v-if="historyLoading[item.id]" class="text-secondary">Loading history...</p>
+          <p v-else-if="historyError[item.id]" class="text-secondary">{{ historyError[item.id] }}</p>
+          <p v-else-if="(historyByVehicle[item.id] || []).length === 0" class="text-secondary">No history entries yet.</p>
+          <ul v-else class="history-list">
+            <li v-for="entry in historyByVehicle[item.id]" :key="entry.id" class="history-item">
+              <div class="history-head">
+                <strong>{{ entry.action }}</strong>
+                <span>{{ formatDateTime(entry.createdAt) }}</span>
+              </div>
+              <div class="text-secondary">{{ entry.summary || 'No summary' }}</div>
+              <div class="text-secondary">Admin: {{ entry.admin.name }} ({{ entry.admin.phone }})</div>
+              <div class="text-secondary">{{ formatHistoryDiff(entry.before, entry.after) }}</div>
+            </li>
+          </ul>
         </div>
       </article>
     </div>
@@ -147,7 +176,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../../components/AppHeader.vue'
 import { api } from '../../services/api'
-import type { AdminAvailableDriver, AdminVehicle, VehicleStatus } from '../../services/types'
+import type { AdminAvailableDriver, AdminVehicle, AdminVehicleHistoryItem, VehicleStatus } from '../../services/types'
 
 const router = useRouter()
 const statuses: VehicleStatus[] = ['AVAILABLE', 'IN_USE', 'CHARGING', 'MAINTENANCE']
@@ -169,6 +198,10 @@ const driverDirectory = ref<AdminAvailableDriver[]>([])
 const loadingDrivers = ref(false)
 const driverQuery = ref('')
 const confirmAssign = ref<{ vehicleId: string; risk: string } | null>(null)
+const historyOpen = ref<Record<string, boolean>>({})
+const historyLoading = ref<Record<string, boolean>>({})
+const historyError = ref<Record<string, string>>({})
+const historyByVehicle = ref<Record<string, AdminVehicleHistoryItem[]>>({})
 const modalCardRef = ref<HTMLElement | null>(null)
 let previousFocus: HTMLElement | null = null
 
@@ -239,6 +272,29 @@ function driverRisk(vehicleId: string) {
   return flags.join(' · ')
 }
 
+function statusOptions(currentStatus: VehicleStatus) {
+  if (currentStatus === 'IN_USE') return ['IN_USE', 'AVAILABLE'] as VehicleStatus[]
+  if (currentStatus === 'CHARGING') return ['CHARGING', 'AVAILABLE'] as VehicleStatus[]
+  if (currentStatus === 'MAINTENANCE') return ['MAINTENANCE', 'AVAILABLE'] as VehicleStatus[]
+  return statuses
+}
+
+function formatHistoryDiff(before?: Record<string, unknown> | null, after?: Record<string, unknown> | null) {
+  const prevStatus = typeof before?.status === 'string' ? before.status : null
+  const nextStatus = typeof after?.status === 'string' ? after.status : null
+  const prevBattery = typeof before?.batteryLevel === 'number' ? before.batteryLevel : null
+  const nextBattery = typeof after?.batteryLevel === 'number' ? after.batteryLevel : null
+
+  const parts: string[] = []
+  if (prevStatus || nextStatus) {
+    parts.push(`Status: ${prevStatus ?? '—'} → ${nextStatus ?? '—'}`)
+  }
+  if (prevBattery !== null || nextBattery !== null) {
+    parts.push(`Battery: ${prevBattery ?? '—'}% → ${nextBattery ?? '—'}%`)
+  }
+  return parts.join(' · ') || 'No before/after diff'
+}
+
 function initializeMaps(next: AdminVehicle[]) {
   const driverMap: Record<string, string> = {}
   const statusMap: Record<string, VehicleStatus> = {}
@@ -251,6 +307,27 @@ function initializeMaps(next: AdminVehicle[]) {
   driverByVehicle.value = driverMap
   statusByVehicle.value = statusMap
   batteryByVehicle.value = batteryMap
+}
+
+async function loadVehicleHistory(vehicleId: string) {
+  historyLoading.value[vehicleId] = true
+  historyError.value[vehicleId] = ''
+  try {
+    const res = await api.adminGetVehicleHistory(vehicleId, { page: 1, limit: 8 })
+    historyByVehicle.value[vehicleId] = res.items
+  } catch (err) {
+    historyError.value[vehicleId] = err instanceof Error ? err.message : 'History request failed'
+  } finally {
+    historyLoading.value[vehicleId] = false
+  }
+}
+
+async function toggleHistory(vehicleId: string) {
+  const next = !historyOpen.value[vehicleId]
+  historyOpen.value[vehicleId] = next
+  if (!next) return
+  if (historyByVehicle.value[vehicleId]) return
+  await loadVehicleHistory(vehicleId)
 }
 
 async function loadAvailableDrivers() {
@@ -395,6 +472,11 @@ async function updateStatus(vehicleId: string) {
     const level = batteryByVehicle.value[vehicleId]
     await api.adminUpdateVehicleStatus(vehicleId, nextStatus, typeof level === 'number' ? level : undefined)
     await reload(page.value)
+    if (historyOpen.value[vehicleId]) {
+      await loadVehicleHistory(vehicleId)
+    } else {
+      delete historyByVehicle.value[vehicleId]
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Request failed'
   } finally {
@@ -454,6 +536,10 @@ onUnmounted(() => {
   gap: 10px;
 }
 
+.fleet-note {
+  font-size: 12px;
+}
+
 .driver-panel {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
@@ -482,6 +568,36 @@ onUnmounted(() => {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.history-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #ffffff;
+}
+
+.history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .modal-backdrop {

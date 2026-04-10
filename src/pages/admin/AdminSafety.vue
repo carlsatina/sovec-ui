@@ -152,6 +152,9 @@
 
     <div v-if="notice.message" class="card notice-card" :class="notice.kind === 'success' ? 'notice-success' : 'notice-error'">
       {{ notice.message }}
+      <div v-if="lastDeadLetters > 0" class="notice-dead-letter-row">
+        <span class="chip chip-warn">Dead letters: {{ lastDeadLetters }}</span>
+      </div>
     </div>
 
     <div v-if="error" class="card">
@@ -305,6 +308,7 @@ const logTotal = ref(0)
 const deliveryLogs = ref<AdminSafetyDeliveryLog[]>([])
 const logBusyById = ref<Record<string, boolean>>({})
 const notice = ref<{ kind: 'success' | 'error'; message: string }>({ kind: 'success', message: '' })
+const lastDeadLetters = ref(0)
 let noticeTimer: ReturnType<typeof setTimeout> | null = null
 const nextStatusByIncident = ref<Record<string, 'RESOLVED' | 'CLOSED'>>({})
 const actionByIncident = ref<Record<string, string>>({})
@@ -491,13 +495,22 @@ async function reload(nextPage = page.value) {
   }
 }
 
-async function withBusy(incidentId: string, action: () => Promise<void>) {
+async function withBusy(incidentId: string, action: () => Promise<{ deadLetters?: number } | void>) {
   busy.value[incidentId] = true
   error.value = ''
+  lastDeadLetters.value = 0
   try {
-    await action()
+    const maybeDelivery = await action()
     await reload(page.value)
-    showNotice('success', 'Incident updated')
+    const deadLetters = typeof (maybeDelivery as { deadLetters?: number } | undefined)?.deadLetters === 'number'
+      ? (maybeDelivery as { deadLetters?: number }).deadLetters ?? 0
+      : 0
+    lastDeadLetters.value = deadLetters
+    if (deadLetters > 0) {
+      showNotice('error', 'Incident updated with delivery failures')
+    } else {
+      showNotice('success', 'Incident updated')
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Request failed'
     showNotice('error', error.value)
@@ -526,10 +539,11 @@ async function escalateIncident(incidentId: string) {
   }
 
   await withBusy(incidentId, async () => {
-    await api.adminEscalateSafetyIncident(incidentId, {
+    const res = await api.adminEscalateSafetyIncident(incidentId, {
       priority: escalatePriorityByIncident.value[incidentId],
       reason
     })
+    return { deadLetters: res.delivery?.deadLetters ?? 0 }
   })
 }
 
@@ -541,11 +555,12 @@ async function resolveIncident(incidentId: string) {
   }
 
   await withBusy(incidentId, async () => {
-    await api.adminResolveSafetyIncident(incidentId, {
+    const res = await api.adminResolveSafetyIncident(incidentId, {
       status: nextStatusByIncident.value[incidentId],
       action,
       note: noteByIncident.value[incidentId] || undefined
     })
+    return { deadLetters: res.delivery?.deadLetters ?? 0 }
   })
 }
 
@@ -594,6 +609,10 @@ onMounted(() => {
 
 .notice-card {
   font-weight: 600;
+}
+
+.notice-dead-letter-row {
+  margin-top: 8px;
 }
 
 .notice-success {

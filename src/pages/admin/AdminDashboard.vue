@@ -86,6 +86,16 @@
     </div>
 
     <div class="card">
+      <div class="section-title">Audit Logs</div>
+      <p class="text-secondary">
+        Review immutable admin action history, payload changes, and operator accountability trail.
+      </p>
+      <button class="button button-primary" type="button" @click="router.push('/admin/audit-logs')">
+        Open Audit Logs
+      </button>
+    </div>
+
+    <div class="card">
       <div class="section-title">Next Modules</div>
       <p class="text-secondary">Automation rules and payout/reconciliation workflows are next.</p>
     </div>
