@@ -46,8 +46,48 @@
     </div>
 
     <div class="card">
+      <div class="section-title">Payment Operations</div>
+      <p class="text-secondary">
+        Review transactions, verify settlement, mark failures, and create refund records.
+      </p>
+      <button class="button button-primary" type="button" @click="router.push('/admin/payments')">
+        Open Payments
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Support Workflows</div>
+      <p class="text-secondary">
+        Review passenger complaints, classify incidents, and move tickets through resolution states.
+      </p>
+      <button class="button button-primary" type="button" @click="router.push('/admin/support')">
+        Open Support
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Analytics & Reports</div>
+      <p class="text-secondary">
+        Monitor ride volumes, revenue trends, completion rate, and cancellation performance.
+      </p>
+      <button class="button button-primary" type="button" @click="router.push('/admin/analytics')">
+        Open Analytics
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Safety Escalation</div>
+      <p class="text-secondary">
+        Triage SOS incidents, review critical notes, and resolve cases with documented actions.
+      </p>
+      <button class="button button-primary" type="button" @click="router.push('/admin/safety')">
+        Open Safety
+      </button>
+    </div>
+
+    <div class="card">
       <div class="section-title">Next Modules</div>
-      <p class="text-secondary">Payments, support workflows, and analytics are next after Fleet MVP.</p>
+      <p class="text-secondary">Automation rules and payout/reconciliation workflows are next.</p>
     </div>
   </div>
 </template>

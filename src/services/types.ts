@@ -308,3 +308,156 @@ export type AdminAvailableDriversResponse = {
   total: number
   totalPages: number
 }
+
+export type AdminPaymentStatus = 'PENDING' | 'PAID' | 'VERIFIED' | 'FAILED' | 'REFUND_PENDING' | 'REFUNDED'
+export type AdminPaymentMethod = 'CASH' | 'EWALLET' | 'CARD'
+
+export type AdminPayment = {
+  id: string
+  rideId: string
+  method: AdminPaymentMethod
+  amount: number
+  status: AdminPaymentStatus
+  reference?: string | null
+  createdAt: string
+  user?: {
+    id: string
+    name: string
+    phone: string
+    email?: string | null
+    role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  } | null
+  ride?: {
+    id: string
+    status: string
+    pickupAddress: string
+    dropoffAddress: string
+    rider?: { id: string; name: string; phone: string } | null
+    driver?: { id: string; name: string; phone: string } | null
+  } | null
+}
+
+export type AdminPaymentsResponse = {
+  items: AdminPayment[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type AdminSupportTicketStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'CLOSED'
+
+export type AdminSupportTicket = {
+  id: string
+  userId: string
+  category: string
+  description: string
+  status: AdminSupportTicketStatus
+  createdAt: string
+  user: {
+    id: string
+    name: string
+    phone: string
+    email?: string | null
+    role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  }
+}
+
+export type AdminSupportTicketsResponse = {
+  items: AdminSupportTicket[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type AdminAnalyticsOverview = {
+  today: {
+    rides: number
+    completedRides: number
+    cancelledRides: number
+    revenue: number
+  }
+  activeDrivers: number
+  rolling30d: {
+    rides: number
+    completedRides: number
+    cancelledRides: number
+    revenue: number
+    completionRate: number
+    cancellationRate: number
+  }
+}
+
+export type AdminAnalyticsTrendItem = {
+  day: string
+  rides: number
+  completedRides: number
+  cancelledRides: number
+  revenue: number
+}
+
+export type AdminAnalyticsTrendsResponse = {
+  days: number
+  items: AdminAnalyticsTrendItem[]
+}
+
+export type AdminSafetyIncidentStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'CLOSED'
+
+export type AdminSafetyIncident = {
+  id: string
+  userId: string
+  category: string
+  description: string
+  status: AdminSafetyIncidentStatus
+  createdAt: string
+  incidentMeta?: {
+    rideId?: string | null
+    severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null
+    reporterRole?: 'PASSENGER' | 'DRIVER' | null
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+    assigneeId?: string | null
+    acknowledgedAt?: string | null
+    resolvedAt?: string | null
+    noteText?: string
+  }
+  timeline?: Array<{
+    id: string
+    type: string
+    createdAt: string
+    metadata?: Record<string, unknown> | null
+  }>
+  sla?: {
+    ackSeconds: number | null
+    resolveSeconds: number | null
+    overdue: boolean
+    overdueThresholdMinutes: number
+  }
+  user: {
+    id: string
+    name: string
+    phone: string
+    email?: string | null
+    role: 'PASSENGER' | 'DRIVER' | 'ADMIN'
+  }
+}
+
+export type AdminSafetyIncidentsResponse = {
+  items: AdminSafetyIncident[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export type AdminSafetyTemplateKey = 'ESCALATION_ADMIN' | 'ESCALATION_REPORTER' | 'RESOLUTION_REPORTER'
+
+export type AdminSafetyTemplate = {
+  key: AdminSafetyTemplateKey
+  subject: string
+  body: string
+}
+
+export type AdminSafetyTemplatesResponse = {
+  items: AdminSafetyTemplate[]
+}

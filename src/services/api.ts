@@ -30,7 +30,18 @@ import type {
   FareConfig,
   AdminVehiclesResponse,
   VehicleStatus,
-  AdminAvailableDriversResponse
+  AdminAvailableDriversResponse,
+  AdminPaymentsResponse,
+  AdminPaymentMethod,
+  AdminPaymentStatus,
+  AdminSupportTicketStatus,
+  AdminSupportTicketsResponse,
+  AdminAnalyticsOverview,
+  AdminAnalyticsTrendsResponse,
+  AdminSafetyIncidentStatus,
+  AdminSafetyIncidentsResponse,
+  AdminSafetyTemplateKey,
+  AdminSafetyTemplatesResponse
 } from './types'
 
 export const api = {
@@ -157,5 +168,80 @@ export const api = {
     request<{ ok: boolean; vehicle: unknown }>(`/admin/vehicles/${vehicleId}/status`, {
       method: 'POST',
       body: typeof batteryLevel === 'number' ? { status, batteryLevel } : { status }
-    })
+    }),
+  adminGetPayments: (params: {
+    status?: AdminPaymentStatus
+    method?: AdminPaymentMethod
+    q?: string
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.method) query.set('method', params.method)
+    if (params.q) query.set('q', params.q)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminPaymentsResponse>(`/admin/payments?${query.toString()}`)
+  },
+  adminVerifyPayment: (paymentId: string, note?: string) =>
+    request<{ ok: boolean; payment: unknown }>(`/admin/payments/${paymentId}/verify`, { method: 'POST', body: { note } }),
+  adminFailPayment: (paymentId: string, reason?: string) =>
+    request<{ ok: boolean; payment: unknown }>(`/admin/payments/${paymentId}/fail`, { method: 'POST', body: { reason } }),
+  adminRefundPayment: (paymentId: string, payload: { reason: string; amount?: number }) =>
+    request<{ ok: boolean; payment: unknown }>(`/admin/payments/${paymentId}/refund`, { method: 'POST', body: payload }),
+  adminGetSupportTickets: (params: {
+    status?: AdminSupportTicketStatus
+    category?: string
+    q?: string
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.category) query.set('category', params.category)
+    if (params.q) query.set('q', params.q)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminSupportTicketsResponse>(`/admin/support/tickets?${query.toString()}`)
+  },
+  adminUpdateSupportTicketStatus: (ticketId: string, status: AdminSupportTicketStatus, note?: string) =>
+    request<{ ok: boolean; ticket: unknown }>(`/admin/support/tickets/${ticketId}/status`, { method: 'POST', body: { status, note } }),
+  adminGetAnalyticsOverview: () =>
+    request<AdminAnalyticsOverview>('/admin/analytics/overview'),
+  adminGetAnalyticsTrends: (days = 7) =>
+    request<AdminAnalyticsTrendsResponse>(`/admin/analytics/trends?days=${encodeURIComponent(String(days))}`),
+  adminGetSafetyIncidents: (params: {
+    status?: AdminSafetyIncidentStatus
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+    assigneeId?: string
+    overdue?: boolean
+    q?: string
+    activeOnly?: boolean
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.priority) query.set('priority', params.priority)
+    if (params.assigneeId) query.set('assigneeId', params.assigneeId)
+    if (typeof params.overdue === 'boolean') query.set('overdue', String(params.overdue))
+    if (params.q) query.set('q', params.q)
+    query.set('activeOnly', String(params.activeOnly ?? true))
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminSafetyIncidentsResponse>(`/admin/safety/incidents?${query.toString()}`)
+  },
+  adminAcknowledgeSafetyIncident: (incidentId: string, note?: string) =>
+    request<{ ok: boolean; incident: unknown }>(`/admin/safety/incidents/${incidentId}/acknowledge`, { method: 'POST', body: { note } }),
+  adminAssignSafetyIncident: (incidentId: string, payload: { assigneeId?: string; note?: string } = {}) =>
+    request<{ ok: boolean; incident: unknown; assigneeId: string }>(`/admin/safety/incidents/${incidentId}/assign`, { method: 'POST', body: payload }),
+  adminEscalateSafetyIncident: (incidentId: string, payload: { priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'; reason: string }) =>
+    request<{ ok: boolean; incident: unknown; priority: string }>(`/admin/safety/incidents/${incidentId}/escalate`, { method: 'POST', body: payload }),
+  adminResolveSafetyIncident: (incidentId: string, payload: { status?: 'RESOLVED' | 'CLOSED'; action: string; note?: string }) =>
+    request<{ ok: boolean; incident: unknown; resolution: unknown }>(`/admin/safety/incidents/${incidentId}/resolve`, { method: 'POST', body: payload }),
+  adminGetSafetyTemplates: () =>
+    request<AdminSafetyTemplatesResponse>('/admin/safety/templates'),
+  adminUpdateSafetyTemplate: (key: AdminSafetyTemplateKey, payload: { subject?: string; body?: string }) =>
+    request<{ ok: boolean; template: { key: AdminSafetyTemplateKey; subject: string; body: string } }>(`/admin/safety/templates/${key}`, { method: 'PUT', body: payload })
 }

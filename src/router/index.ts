@@ -53,6 +53,10 @@ const AdminDriverApplications = () => import('../pages/admin/AdminDriverApplicat
 const AdminTripMonitoring = () => import('../pages/admin/AdminTripMonitoring.vue')
 const AdminPricing = () => import('../pages/admin/AdminPricing.vue')
 const AdminFleet = () => import('../pages/admin/AdminFleet.vue')
+const AdminPayments = () => import('../pages/admin/AdminPayments.vue')
+const AdminSupport = () => import('../pages/admin/AdminSupport.vue')
+const AdminAnalytics = () => import('../pages/admin/AdminAnalytics.vue')
+const AdminSafety = () => import('../pages/admin/AdminSafety.vue')
 
 const routes = [
   { path: '/', redirect: '/auth/splash' },
@@ -115,7 +119,11 @@ const routes = [
   { path: '/admin/driver-applications', component: AdminDriverApplications, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/trips', component: AdminTripMonitoring, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/pricing', component: AdminPricing, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/fleet', component: AdminFleet, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
+  { path: '/admin/fleet', component: AdminFleet, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/payments', component: AdminPayments, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/support', component: AdminSupport, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/analytics', component: AdminAnalytics, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/safety', component: AdminSafety, meta: { showTabs: false, requiresAuth: true, requiresAdmin: true } }
 ]
 
 const router = createRouter({
