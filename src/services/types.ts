@@ -461,3 +461,29 @@ export type AdminSafetyTemplate = {
 export type AdminSafetyTemplatesResponse = {
   items: AdminSafetyTemplate[]
 }
+
+export type AdminSafetyDeliveryStatus = 'DELIVERED' | 'DEAD_LETTER'
+export type AdminSafetyDeliveryChannel = 'sms' | 'email' | 'webhook'
+
+export type AdminSafetyDeliveryLog = {
+  id: string
+  incidentId: string
+  event: string
+  channel: AdminSafetyDeliveryChannel
+  target: string
+  status: AdminSafetyDeliveryStatus
+  attempts: number
+  lastError?: string | null
+  payload?: Record<string, unknown> | null
+  deliveredAt?: string | null
+  deadLetteredAt?: string | null
+  createdAt: string
+}
+
+export type AdminSafetyDeliveryLogsResponse = {
+  items: AdminSafetyDeliveryLog[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}

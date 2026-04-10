@@ -41,7 +41,10 @@ import type {
   AdminSafetyIncidentStatus,
   AdminSafetyIncidentsResponse,
   AdminSafetyTemplateKey,
-  AdminSafetyTemplatesResponse
+  AdminSafetyTemplatesResponse,
+  AdminSafetyDeliveryLogsResponse,
+  AdminSafetyDeliveryStatus,
+  AdminSafetyDeliveryChannel
 } from './types'
 
 export const api = {
@@ -243,5 +246,24 @@ export const api = {
   adminGetSafetyTemplates: () =>
     request<AdminSafetyTemplatesResponse>('/admin/safety/templates'),
   adminUpdateSafetyTemplate: (key: AdminSafetyTemplateKey, payload: { subject?: string; body?: string }) =>
-    request<{ ok: boolean; template: { key: AdminSafetyTemplateKey; subject: string; body: string } }>(`/admin/safety/templates/${key}`, { method: 'PUT', body: payload })
+    request<{ ok: boolean; template: { key: AdminSafetyTemplateKey; subject: string; body: string } }>(`/admin/safety/templates/${key}`, { method: 'PUT', body: payload }),
+  adminGetSafetyDeliveryLogs: (params: {
+    incidentId?: string
+    status?: AdminSafetyDeliveryStatus
+    channel?: AdminSafetyDeliveryChannel
+    q?: string
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.incidentId) query.set('incidentId', params.incidentId)
+    if (params.status) query.set('status', params.status)
+    if (params.channel) query.set('channel', params.channel)
+    if (params.q) query.set('q', params.q)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminSafetyDeliveryLogsResponse>(`/admin/safety/delivery-logs?${query.toString()}`)
+  },
+  adminRetrySafetyDeliveryLog: (logId: string) =>
+    request<{ ok: boolean; retry: { ok: boolean; channel: string; target: string; attempts: number; error?: string } }>(`/admin/safety/delivery-logs/${logId}/retry`, { method: 'POST' })
 }

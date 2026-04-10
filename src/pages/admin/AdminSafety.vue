@@ -91,6 +91,65 @@
       </div>
     </section>
 
+    <section class="card templates-card">
+      <div class="templates-head">
+        <div>
+          <div class="section-title">Delivery Logs</div>
+          <p class="text-secondary">Track delivery outcomes and retry dead-lettered notifications.</p>
+        </div>
+        <button class="button button-ghost" type="button" :disabled="logsLoading" @click="loadDeliveryLogs(1)">
+          {{ logsLoading ? 'Refreshing...' : 'Refresh Logs' }}
+        </button>
+      </div>
+
+      <div class="filter-row">
+        <input v-model.trim="logQ" class="input" placeholder="Search incident/target/error" />
+        <select v-model="logStatus" class="input select-input">
+          <option value="">All statuses</option>
+          <option value="DEAD_LETTER">DEAD_LETTER</option>
+          <option value="DELIVERED">DELIVERED</option>
+        </select>
+        <select v-model="logChannel" class="input select-input">
+          <option value="">All channels</option>
+          <option value="sms">sms</option>
+          <option value="email">email</option>
+          <option value="webhook">webhook</option>
+        </select>
+        <button class="button button-primary" type="button" :disabled="logsLoading" @click="loadDeliveryLogs(1)">Apply</button>
+      </div>
+
+      <p v-if="logsError" class="text-secondary templates-error">{{ logsError }}</p>
+      <div v-if="logsLoading && deliveryLogs.length === 0" class="text-secondary">Loading logs...</div>
+      <div v-else-if="deliveryLogs.length === 0" class="text-secondary">No delivery logs found.</div>
+      <div v-else class="templates-grid">
+        <article v-for="log in deliveryLogs" :key="log.id" class="template-item">
+          <div class="template-item-head">
+            <strong>{{ log.channel.toUpperCase() }} · {{ log.status }}</strong>
+            <span class="text-secondary">{{ formatDate(log.createdAt) }}</span>
+          </div>
+          <p class="text-secondary"><strong>Incident:</strong> {{ shortId(log.incidentId) }} · <strong>Target:</strong> {{ log.target }}</p>
+          <p class="text-secondary"><strong>Attempts:</strong> {{ log.attempts }} · <strong>Event:</strong> {{ log.event }}</p>
+          <p v-if="log.lastError" class="text-secondary"><strong>Error:</strong> {{ log.lastError }}</p>
+          <div class="template-actions">
+            <button
+              class="button button-ghost"
+              type="button"
+              :disabled="log.status !== 'DEAD_LETTER' || logBusyById[log.id]"
+              @click="retryDelivery(log.id)"
+            >
+              {{ logBusyById[log.id] ? 'Retrying...' : 'Retry' }}
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div v-if="deliveryLogs.length > 0" class="pagination">
+        <button class="button button-ghost" type="button" :disabled="logsLoading || logPage <= 1" @click="loadDeliveryLogs(logPage - 1)">Previous</button>
+        <div class="text-secondary">Page {{ logPage }} of {{ logTotalPages }} · {{ logTotal }} total</div>
+        <button class="button button-ghost" type="button" :disabled="logsLoading || logPage >= logTotalPages" @click="loadDeliveryLogs(logPage + 1)">Next</button>
+      </div>
+    </section>
+
     <div v-if="notice.message" class="card notice-card" :class="notice.kind === 'success' ? 'notice-success' : 'notice-error'">
       {{ notice.message }}
     </div>
@@ -180,7 +239,15 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../../components/AppHeader.vue'
 import { api } from '../../services/api'
-import type { AdminSafetyIncident, AdminSafetyIncidentStatus, AdminSafetyTemplate, AdminSafetyTemplateKey } from '../../services/types'
+import type {
+  AdminSafetyDeliveryChannel,
+  AdminSafetyDeliveryLog,
+  AdminSafetyDeliveryStatus,
+  AdminSafetyIncident,
+  AdminSafetyIncidentStatus,
+  AdminSafetyTemplate,
+  AdminSafetyTemplateKey
+} from '../../services/types'
 
 const router = useRouter()
 const statuses: AdminSafetyIncidentStatus[] = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'CLOSED']
@@ -227,6 +294,16 @@ const templateBusyByKey = ref<Record<AdminSafetyTemplateKey, boolean>>({
   ESCALATION_REPORTER: false,
   RESOLUTION_REPORTER: false
 })
+const logsLoading = ref(false)
+const logsError = ref('')
+const logQ = ref('')
+const logStatus = ref('')
+const logChannel = ref('')
+const logPage = ref(1)
+const logTotalPages = ref(1)
+const logTotal = ref(0)
+const deliveryLogs = ref<AdminSafetyDeliveryLog[]>([])
+const logBusyById = ref<Record<string, boolean>>({})
 const notice = ref<{ kind: 'success' | 'error'; message: string }>({ kind: 'success', message: '' })
 let noticeTimer: ReturnType<typeof setTimeout> | null = null
 const nextStatusByIncident = ref<Record<string, 'RESOLVED' | 'CLOSED'>>({})
@@ -348,6 +425,46 @@ async function saveTemplate(key: AdminSafetyTemplateKey) {
   }
 }
 
+async function loadDeliveryLogs(nextPage = logPage.value) {
+  logsLoading.value = true
+  logsError.value = ''
+  try {
+    const res = await api.adminGetSafetyDeliveryLogs({
+      q: logQ.value || undefined,
+      status: (logStatus.value || undefined) as AdminSafetyDeliveryStatus | undefined,
+      channel: (logChannel.value || undefined) as AdminSafetyDeliveryChannel | undefined,
+      page: nextPage,
+      limit: 10
+    })
+    deliveryLogs.value = res.items
+    logPage.value = res.page
+    logTotalPages.value = res.totalPages
+    logTotal.value = res.total
+  } catch (err) {
+    logsError.value = err instanceof Error ? err.message : 'Delivery log request failed'
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+async function retryDelivery(logId: string) {
+  logBusyById.value[logId] = true
+  logsError.value = ''
+  try {
+    const res = await api.adminRetrySafetyDeliveryLog(logId)
+    if (!res.retry.ok) {
+      throw new Error(res.retry.error || 'Retry failed')
+    }
+    showNotice('success', 'Delivery retried')
+    await loadDeliveryLogs(logPage.value)
+  } catch (err) {
+    logsError.value = err instanceof Error ? err.message : 'Retry failed'
+    showNotice('error', logsError.value)
+  } finally {
+    logBusyById.value[logId] = false
+  }
+}
+
 async function reload(nextPage = page.value) {
   loading.value = true
   error.value = ''
@@ -435,6 +552,7 @@ async function resolveIncident(incidentId: string) {
 onMounted(() => {
   reload(1)
   loadTemplates()
+  loadDeliveryLogs(1)
 })
 </script>
 
