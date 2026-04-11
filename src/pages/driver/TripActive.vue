@@ -4,9 +4,10 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="14"
+        :zoom="17"
         :markers="mapMarkers"
         :path="routePath"
+        :follow-driver="true"
         map-id="driver-trip-map"
       />
       <div class="trip-chip">

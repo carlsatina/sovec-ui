@@ -5,9 +5,10 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="15"
+        :zoom="17"
         :markers="mapMarkers"
         :path="routePath"
+        :follow-driver="true"
         map-id="trip-progress-map"
       />
       <div v-if="etaText" class="eta-chip">

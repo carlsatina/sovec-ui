@@ -30,13 +30,15 @@ const props = withDefaults(
     }>
     path?: Array<{ lat: number; lng: number }>
     interactive?: boolean
+    followDriver?: boolean  // when true, camera tracks `center` at `zoom` instead of fitting all markers
   }>(),
   {
     mapId: 'solvec-map',
     zoom: 14,
     markers: () => [],
     path: () => [],
-    interactive: true
+    interactive: true,
+    followDriver: false
   }
 )
 
@@ -123,6 +125,17 @@ async function syncOverlays() {
 
 async function moveCameraToData() {
   if (!map.value) return
+
+  // Navigation mode: smoothly follow the center position at the given zoom
+  if (props.followDriver) {
+    await map.value.setCamera({
+      coordinate: props.center,
+      zoom: props.zoom,
+      animate: true,
+      animationDuration: 400
+    })
+    return
+  }
 
   const points = [...props.markers.map((m) => ({ lat: m.lat, lng: m.lng })), ...props.path]
   if (points.length < 2) {
@@ -264,6 +277,13 @@ function updateWebCamera() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = (window as any).google.maps
 
+  // Navigation mode: smoothly pan and lock zoom to follow center
+  if (props.followDriver) {
+    webMap.value.panTo(props.center)
+    webMap.value.setZoom(props.zoom)
+    return
+  }
+
   const points = [...props.markers.map((m) => ({ lat: m.lat, lng: m.lng })), ...props.path]
   if (points.length < 2) {
     webMap.value.setCenter(props.center)
@@ -287,7 +307,7 @@ onMounted(async () => {
 })
 
 watch(
-  () => [props.center.lat, props.center.lng, props.zoom, props.path, props.markers, props.interactive],
+  () => [props.center.lat, props.center.lng, props.zoom, props.path, props.markers, props.interactive, props.followDriver],
   async () => {
     if (isNative.value) {
       if (!map.value) return
