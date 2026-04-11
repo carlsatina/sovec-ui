@@ -7,13 +7,23 @@
         :zoom="17"
         :markers="mapMarkers"
         :path="routePath"
-        :follow-driver="true"
+        :follow-driver="isFollowing"
+        :map-bearing="driverBearing"
+        :tilt="45"
         map-id="driver-trip-map"
+        @camera-idle="onCameraIdle"
       />
       <div class="trip-chip">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
         {{ etaText }} · {{ distanceText }}
       </div>
+
+      <!-- Recenter button -->
+      <button v-if="!isFollowing" class="recenter-btn" type="button" @click="isFollowing = true" aria-label="Recenter on position">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Sheet -->
@@ -90,6 +100,7 @@ import { useDriverStore } from '../../store/driver'
 import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { decodePolyline } from '../../utils/polyline'
+import { computeBearing } from '../../utils/mapIcons'
 
 const router = useRouter()
 const driver = useDriverStore()
@@ -100,6 +111,28 @@ const routeDurationMin = ref<number | null>(null)
 const routeDistanceKm = ref<number | null>(null)
 const carMarkerIcon = 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png'
 
+// Navigation mode
+const isFollowing = ref(true)
+const driverBearing = ref(0)
+const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
+
+function onCameraIdle(coords: { lat: number; lng: number }) {
+  if (!isFollowing.value) return
+  const driverPos = driver.driverLocation
+  if (!driverPos) return
+  const dist = Math.hypot(coords.lat - driverPos.lat, coords.lng - driverPos.lng)
+  if (dist > 0.005) isFollowing.value = false
+}
+
+function updateDriverBearing(newLoc: { lat: number; lng: number } | null) {
+  if (!newLoc) return
+  if (prevDriverLocation.value) {
+    const dist = Math.hypot(newLoc.lat - prevDriverLocation.value.lat, newLoc.lng - prevDriverLocation.value.lng)
+    if (dist > 0.00005) driverBearing.value = computeBearing(prevDriverLocation.value, newLoc)
+  }
+  prevDriverLocation.value = { ...newLoc }
+}
+
 const mapCenter = computed(() =>
   driver.driverLocation
     ?? (driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 })
@@ -108,17 +141,16 @@ const mapCenter = computed(() =>
 const mapMarkers = computed(() => {
   if (!driver.currentRide) return []
   const markers: Array<{
-    lat: number
-    lng: number
-    title?: string
-    iconUrl?: string
-    iconSize?: { width: number; height: number }
+    lat: number; lng: number; title?: string
+    iconUrl?: string; iconSize?: { width: number; height: number }
+    bearing?: number
   }> = []
   if (driver.driverLocation) {
     markers.push({
       lat: driver.driverLocation.lat,
       lng: driver.driverLocation.lng,
       title: 'Driver',
+      bearing: driverBearing.value,
       iconUrl: carMarkerIcon,
       iconSize: { width: 36, height: 36 }
     })
@@ -145,46 +177,63 @@ const mapsLink = computed(() => {
   return `https://www.google.com/maps/dir/?api=1${origin}&destination=${lat},${lng}&travelmode=driving`
 })
 
-async function fetchRoute() {
-  if (!driver.currentRide) return
-  try {
-    const route = await api.route(
-      driver.currentRide.pickupLat, driver.currentRide.pickupLng,
-      driver.currentRide.dropoffLat, driver.currentRide.dropoffLng
-    )
-    routePath.value = route.polyline ? decodePolyline(route.polyline) : []
-  } catch {
-    routePath.value = [
-      { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng },
-      { lat: driver.currentRide.dropoffLat, lng: driver.currentRide.dropoffLng }
-    ]
-  }
-}
 
+// Sequence counter + last-fetch position — avoids stale responses and excessive API calls
+let routeSeq = 0
+let lastRouteFetchLat = 0
+let lastRouteFetchLng = 0
+// Minimum distance (degrees ~30 m) the driver must move before re-fetching the route
+const ROUTE_REFETCH_THRESHOLD = 0.0003
+
+// Fetch route from driver's current position to dropoff — updates polyline + ETA + distance
 async function fetchLiveTripMetrics() {
   if (!driver.currentRide || !driver.driverLocation) {
     routeDurationMin.value = null
     routeDistanceKm.value = null
     return
   }
+  const fromLat = driver.driverLocation.lat
+  const fromLng = driver.driverLocation.lng
+  const toLat   = driver.currentRide.dropoffLat
+  const toLng   = driver.currentRide.dropoffLng
+
+  // Skip if driver hasn't moved far enough since last fetch
+  const moved = Math.hypot(fromLat - lastRouteFetchLat, fromLng - lastRouteFetchLng)
+  if (moved < ROUTE_REFETCH_THRESHOLD && routeSeq > 0) return
+
+  const seq = ++routeSeq
+  lastRouteFetchLat = fromLat
+  lastRouteFetchLng = fromLng
+
   try {
-    const route = await api.route(
-      driver.driverLocation.lat, driver.driverLocation.lng,
-      driver.currentRide.dropoffLat, driver.currentRide.dropoffLng
-    )
+    const route = await api.route(fromLat, fromLng, toLat, toLng)
+    if (seq !== routeSeq) return
+    routePath.value = route.polyline ? decodePolyline(route.polyline) : [
+      { lat: fromLat, lng: fromLng },
+      { lat: toLat,   lng: toLng   }
+    ]
     routeDurationMin.value = Math.max(1, Math.round(route.durationSeconds / 60))
     routeDistanceKm.value = route.distanceMeters / 1000
   } catch {
+    if (seq !== routeSeq) return
     routeDurationMin.value = null
     routeDistanceKm.value = null
   }
 }
 
-watch(() => driver.driverLocation, fetchLiveTripMetrics)
+watch(() => driver.driverLocation, (newLoc) => {
+  updateDriverBearing(newLoc)
+  fetchLiveTripMetrics()
+})
 
 onMounted(async () => {
   if (!driver.currentRide) return
-  await fetchRoute()
+  // Restart GPS if it was stopped (e.g. by navigating away from DriverHome).
+  // This is the safety net for the root-cause fix in driver.ts.
+  const driverId = auth.user?.id
+  if (driverId) driver.ensureLocationTracking(driverId)
+
+  if (driver.driverLocation) prevDriverLocation.value = { ...driver.driverLocation }
   await fetchLiveTripMetrics()
 })
 
@@ -204,6 +253,19 @@ async function endTrip() {
 
 .map-area { flex: 1; position: relative; min-height: 0; }
 .map-area :deep(.native-map) { border-radius: 0; height: 100%; min-height: 100%; }
+
+.recenter-btn {
+  position: absolute;
+  bottom: 16px; right: 16px;
+  width: 44px; height: 44px;
+  border-radius: 50%; border: none;
+  background: #fff; color: #00c4bc;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 10; cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.recenter-btn:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(0,0,0,0.14); }
 
 .trip-chip {
   position: absolute; top: 52px; left: 50%; transform: translateX(-50%);

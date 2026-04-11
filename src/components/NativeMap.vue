@@ -30,7 +30,9 @@ const props = withDefaults(
     }>
     path?: Array<{ lat: number; lng: number }>
     interactive?: boolean
-    followDriver?: boolean  // when true, camera tracks `center` at `zoom` instead of fitting all markers
+    followDriver?: boolean  // lock camera to center, skipping fitBounds
+    mapBearing?: number     // map heading in degrees (0 = north up); used in navigation mode
+    tilt?: number           // camera tilt in degrees 0-45; used in navigation mode
   }>(),
   {
     mapId: 'solvec-map',
@@ -38,7 +40,9 @@ const props = withDefaults(
     markers: () => [],
     path: () => [],
     interactive: true,
-    followDriver: false
+    followDriver: false,
+    mapBearing: 0,
+    tilt: 0
   }
 )
 
@@ -49,6 +53,8 @@ const mapRef = shallowRef<HTMLElement>()
 const map = shallowRef<GoogleMap>()
 const markerIds = shallowRef<string[]>([])
 const polylineIds = shallowRef<string[]>([])
+// Prevent concurrent syncOverlays calls from piling up during rapid GPS updates
+let isSyncing = false
 
 async function createMap() {
   if (!isNative.value) return
@@ -88,51 +94,60 @@ async function createMap() {
 
 async function syncOverlays() {
   if (!map.value) return
+  // Skip if the previous sync is still in progress — prevents bridge call pile-up
+  // during rapid GPS updates. The camera watch still updates position independently.
+  if (isSyncing) return
+  isSyncing = true
+  try {
+    if (markerIds.value.length) {
+      await map.value.removeMarkers(markerIds.value)
+      markerIds.value = []
+    }
 
-  if (markerIds.value.length) {
-    await map.value.removeMarkers(markerIds.value)
-    markerIds.value = []
-  }
+    if (polylineIds.value.length) {
+      await map.value.removePolylines(polylineIds.value)
+      polylineIds.value = []
+    }
 
-  if (polylineIds.value.length) {
-    await map.value.removePolylines(polylineIds.value)
-    polylineIds.value = []
-  }
+    if (props.markers.length) {
+      const markers: Marker[] = props.markers.map((item) => ({
+        coordinate: { lat: item.lat, lng: item.lng },
+        title: item.title,
+        draggable: item.draggable ?? false,
+        iconUrl: item.iconUrl,
+        iconSize: item.iconSize
+      }))
+      markerIds.value = await map.value.addMarkers(markers)
+    }
 
-  if (props.markers.length) {
-    const markers: Marker[] = props.markers.map((item) => ({
-      coordinate: { lat: item.lat, lng: item.lng },
-      title: item.title,
-      draggable: item.draggable ?? false,
-      iconUrl: item.iconUrl,
-      iconSize: item.iconSize
-    }))
-    markerIds.value = await map.value.addMarkers(markers)
-  }
-
-  if (props.path.length > 1) {
-    const polylines: Polyline[] = [
-      {
-        path: props.path,
-        strokeColor: '#21c7c7',
-        strokeOpacity: 1,
-        strokeWeight: 6
-      }
-    ]
-    polylineIds.value = await map.value.addPolylines(polylines)
+    if (props.path.length > 1) {
+      const polylines: Polyline[] = [
+        {
+          path: props.path,
+          strokeColor: '#21c7c7',
+          strokeOpacity: 1,
+          strokeWeight: 6
+        }
+      ]
+      polylineIds.value = await map.value.addPolylines(polylines)
+    }
+  } finally {
+    isSyncing = false
   }
 }
 
 async function moveCameraToData() {
   if (!map.value) return
 
-  // Navigation mode: smoothly follow the center position at the given zoom
+  // Navigation mode: track driver position with heading and tilt
   if (props.followDriver) {
     await map.value.setCamera({
       coordinate: props.center,
       zoom: props.zoom,
+      bearing: props.mapBearing,
+      angle: props.tilt,
       animate: true,
-      animationDuration: 400
+      animationDuration: 300
     })
     return
   }
@@ -277,10 +292,12 @@ function updateWebCamera() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = (window as any).google.maps
 
-  // Navigation mode: smoothly pan and lock zoom to follow center
+  // Navigation mode: track driver with heading and tilt
   if (props.followDriver) {
     webMap.value.panTo(props.center)
     webMap.value.setZoom(props.zoom)
+    webMap.value.setHeading(props.mapBearing)
+    webMap.value.setTilt(props.tilt)
     return
   }
 
@@ -306,8 +323,9 @@ onMounted(async () => {
   }
 })
 
+// Watch 1: overlays — fires when markers or path change (not on every location update)
 watch(
-  () => [props.center.lat, props.center.lng, props.zoom, props.path, props.markers, props.interactive, props.followDriver],
+  () => [props.markers, props.path, props.interactive],
   async () => {
     if (isNative.value) {
       if (!map.value) return
@@ -317,9 +335,24 @@ watch(
         await map.value.disableTouch()
       }
       await syncOverlays()
-      await moveCameraToData()
+      // Only fit-to-bounds when NOT in follow mode (follow mode manages camera separately)
+      if (!props.followDriver) await moveCameraToData()
     } else {
       syncWebOverlays()
+      if (!props.followDriver) updateWebCamera()
+    }
+  },
+  { deep: true }
+)
+
+// Watch 2: camera — fires on every position, zoom, bearing, tilt or follow-mode change
+watch(
+  () => [props.center.lat, props.center.lng, props.zoom, props.mapBearing, props.tilt, props.followDriver],
+  async () => {
+    if (isNative.value) {
+      if (!map.value) return
+      await moveCameraToData()
+    } else {
       updateWebCamera()
     }
   }

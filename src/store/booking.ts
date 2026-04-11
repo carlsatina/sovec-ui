@@ -38,6 +38,7 @@ export const useBookingStore = defineStore('booking', () => {
   let rideStatusHandler: ((payload: RideStatusPayload) => void) | null = null
   let driverLocationHandler: ((payload: { lat: number; lng: number }) => void) | null = null
   let rideStatusPoller: ReturnType<typeof setInterval> | null = null
+  let socketReconnectHandler: (() => void) | null = null
 
   // True while both handlers are registered — lets pages avoid redundant resubscription
   const hasActiveSubscription = ref(false)
@@ -164,6 +165,14 @@ export const useBookingStore = defineStore('booking', () => {
     // Remove any previously registered handlers before adding new ones
     unsubscribeFromRideUpdates()
 
+    // Re-join the ride room whenever the socket reconnects (mobile network drops).
+    // Without this, the socket reconnects silently and the passenger stops receiving
+    // driver:location events because they're no longer in the ride room.
+    socketReconnectHandler = () => {
+      socket.emit('join', { userId: auth.user?.id, rideId: id })
+    }
+    socket.on('connect', socketReconnectHandler)
+
     rideStatusHandler = (payload: RideStatusPayload) => {
       if (payload.rideId !== id) return
       rideStatus.value = payload.status
@@ -195,6 +204,10 @@ export const useBookingStore = defineStore('booking', () => {
     if (driverLocationHandler) {
       socket.off('driver:location', driverLocationHandler)
       driverLocationHandler = null
+    }
+    if (socketReconnectHandler) {
+      socket.off('connect', socketReconnectHandler)
+      socketReconnectHandler = null
     }
     stopRideStatusPolling()
     hasActiveSubscription.value = false

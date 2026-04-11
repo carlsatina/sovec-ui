@@ -8,8 +8,11 @@
         :zoom="17"
         :markers="mapMarkers"
         :path="routePath"
-        :follow-driver="true"
+        :follow-driver="isFollowing"
+        :map-bearing="driverBearing"
+        :tilt="45"
         map-id="driver-assigned-map"
+        @camera-idle="onCameraIdle"
       />
 
       <!-- Back -->
@@ -24,6 +27,13 @@
         <div class="map-eta-badge">{{ etaText }}</div>
         <div class="map-pickup-label">{{ pickupShort }}</div>
       </div>
+
+      <!-- Recenter button — shown when user has panned away -->
+      <button v-if="!isFollowing" class="recenter-btn" type="button" @click="isFollowing = true" aria-label="Recenter on driver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        </svg>
+      </button>
     </div>
 
     <!-- ── Draggable bottom sheet ── -->
@@ -302,9 +312,21 @@ const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const etaDurationMin = ref<number | null>(null)
 const routeDistanceKm = ref<number | null>(null)
 
-// Directional car icon — bearing tracked for web Symbol rotation
+// Navigation mode — lock camera to driver; disable when user pans away
+const isFollowing = ref(true)
+
+// Directional car icon — bearing tracked for web Symbol rotation and map heading
 const driverBearing = ref(0)
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
+
+function onCameraIdle(coords: { lat: number; lng: number }) {
+  if (!isFollowing.value) return
+  const driverPos = booking.driverLocation
+  if (!driverPos) return
+  // If camera center drifted far from driver position, user must have panned manually
+  const dist = Math.hypot(coords.lat - driverPos.lat, coords.lng - driverPos.lng)
+  if (dist > 0.005) isFollowing.value = false
+}
 
 const mapCenter = computed(() =>
   booking.driverLocation
@@ -478,6 +500,27 @@ function cancelRide() {
   transition: background 0.15s;
 }
 .map-back:active { background: #fff; }
+
+/* Recenter button — bottom-right, appears when user pans away */
+.recenter-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: #3D7A38;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.recenter-btn:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(0,0,0,0.14); }
 
 /* ETA + pickup label bubble (top-left, below back button) */
 .map-eta-bubble {

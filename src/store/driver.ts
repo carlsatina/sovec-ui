@@ -13,7 +13,14 @@ export const useDriverStore = defineStore('driver', () => {
   const arrivedAtPickup = ref(false)
   const driverLocation = ref<{ lat: number; lng: number } | null>(null)
 
-  let locationInterval: ReturnType<typeof setInterval> | null = null
+  // watchPosition handle; null when not tracking
+  let locationWatchId: number | null = null
+  // Timestamp of last server/socket emission — throttled to avoid API spam
+  let lastEmitMs = 0
+  // Minimum ms between server emissions (3 s keeps passengers smooth without hammering the API)
+  const EMIT_INTERVAL_MS = 3000
+  // Socket reconnect handler reference (stored so it can be removed on cleanup)
+  let driverReconnectHandler: (() => void) | null = null
 
   // ── Online / Offline ──────────────────────────────────────────────────────
 
@@ -28,8 +35,7 @@ export const useDriverStore = defineStore('driver', () => {
       const socket = getSocket()
       socket.emit('driver:online', { driverId })
 
-      // Start location polling every 8s
-      startLocationPolling(driverId)
+      startLocationTracking(driverId)
     } finally {
       loading.value = false
     }
@@ -40,42 +46,83 @@ export const useDriverStore = defineStore('driver', () => {
     try {
       await api.driverGoOffline(driverId)
       isOnline.value = false
-      stopLocationPolling()
+      stopLocationTracking()
     } finally {
       loading.value = false
     }
   }
 
-  // ── Location polling ──────────────────────────────────────────────────────
+  // ── Continuous GPS tracking ───────────────────────────────────────────────
+  //
+  // Uses watchPosition (continuous hardware GPS) instead of polling getCurrentPosition.
+  // driverLocation updates on every GPS fix (~1-3 s on a phone) so the driver's own
+  // map is always smooth.  Server/socket emissions are throttled to EMIT_INTERVAL_MS
+  // so we don't hammer the API or flood the passenger with too many updates.
 
-  function broadcastCurrentLocation(driverId: string) {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { latitude: lat, longitude: lng } = pos.coords
-      driverLocation.value = { lat, lng }
+  async function handlePosition(driverId: string, pos: GeolocationPosition) {
+    const { latitude: lat, longitude: lng } = pos.coords
+    // Update the driver's own reactive location immediately (smooth map on driver's screen)
+    driverLocation.value = { lat, lng }
+
+    // Throttle: only push to server/passenger every EMIT_INTERVAL_MS
+    const now = Date.now()
+    if (now - lastEmitMs < EMIT_INTERVAL_MS) return
+    lastEmitMs = now
+
+    try {
       await api.driverUpdateLocation(driverId, lat, lng)
+    } catch {
+      // Non-fatal — location update failure should not crash the ride
+    }
 
-      // Broadcast live position to active ride room so passenger map updates
-      if (currentRide.value) {
-        const socket = getSocket()
-        socket.emit('driver:location_update', { rideId: currentRide.value.id, lat, lng })
-      }
-    })
-  }
-
-  function startLocationPolling(driverId: string) {
-    stopLocationPolling()
-    // Fire immediately so the passenger sees the car icon right away
-    broadcastCurrentLocation(driverId)
-    locationInterval = setInterval(() => broadcastCurrentLocation(driverId), 8000)
-  }
-
-  function stopLocationPolling() {
-    if (locationInterval != null) {
-      clearInterval(locationInterval)
-      locationInterval = null
+    if (currentRide.value) {
+      const socket = getSocket()
+      socket.emit('driver:location_update', { rideId: currentRide.value.id, lat, lng })
     }
   }
+
+  function startLocationTracking(driverId: string) {
+    stopLocationTracking()
+    if (!navigator.geolocation) return
+
+    const geoOptions: PositionOptions = {
+      enableHighAccuracy: true,   // use hardware GPS, not cell-tower/WiFi
+      maximumAge: 0,              // always request a fresh fix
+      timeout: 10000
+    }
+
+    // Get an immediate fix so driver's screen and passengers update right away
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { void handlePosition(driverId, pos) },
+      null,
+      geoOptions
+    )
+
+    // Watch continuously — fires every time the device detects movement
+    locationWatchId = navigator.geolocation.watchPosition(
+      (pos) => { void handlePosition(driverId, pos) },
+      null,
+      geoOptions
+    )
+  }
+
+  function stopLocationTracking() {
+    if (locationWatchId !== null) {
+      navigator.geolocation.clearWatch(locationWatchId)
+      locationWatchId = null
+    }
+    lastEmitMs = 0
+  }
+
+  // Start tracking only if not already running — safe to call from any page as a safety net
+  function ensureLocationTracking(driverId: string) {
+    if (locationWatchId !== null) return
+    startLocationTracking(driverId)
+  }
+
+  // Keep old names as aliases so nothing else in the codebase breaks
+  const startLocationPolling = startLocationTracking
+  const stopLocationPolling  = stopLocationTracking
 
   // ── Ride actions ──────────────────────────────────────────────────────────
 
@@ -152,6 +199,21 @@ export const useDriverStore = defineStore('driver', () => {
     const socket = getSocket()
     socket.emit('join', { userId: driverId })
 
+    // Re-join user room on socket reconnect (mobile network drops/resumes)
+    if (driverReconnectHandler) socket.off('connect', driverReconnectHandler)
+    driverReconnectHandler = () => {
+      socket.emit('join', { userId: driverId })
+      // Immediately push location to passengers so they don't have to wait for next GPS tick
+      if (currentRide.value && driverLocation.value) {
+        socket.emit('driver:location_update', {
+          rideId: currentRide.value.id,
+          lat: driverLocation.value.lat,
+          lng: driverLocation.value.lng,
+        })
+      }
+    }
+    socket.on('connect', driverReconnectHandler)
+
     socket.on('ride:status', (data: { rideId: string; status: string; riderId?: string }) => {
       if (data.status === 'ASSIGNED') {
         // Fetch full ride details and show incoming request
@@ -173,7 +235,14 @@ export const useDriverStore = defineStore('driver', () => {
   function unsubscribeFromRideEvents() {
     const socket = getSocket()
     socket.off('ride:status')
-    stopLocationPolling()
+    if (driverReconnectHandler) {
+      socket.off('connect', driverReconnectHandler)
+      driverReconnectHandler = null
+    }
+    // NOTE: do NOT stop location tracking here — the driver is still online and
+    // may have an active ride. Tracking is stopped only by goOffline() or when
+    // the app closes. Stopping it here was the root cause of map freezing after
+    // the driver navigated away from DriverHome.
   }
 
   // ── Resume active ride on app open ────────────────────────────────────────
@@ -215,6 +284,7 @@ export const useDriverStore = defineStore('driver', () => {
     completeTrip,
     subscribeToRideEvents,
     unsubscribeFromRideEvents,
+    ensureLocationTracking,
     resumeSession,
   }
 })

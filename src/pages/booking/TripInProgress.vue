@@ -8,13 +8,23 @@
         :zoom="17"
         :markers="mapMarkers"
         :path="routePath"
-        :follow-driver="true"
+        :follow-driver="isFollowing"
+        :map-bearing="driverBearing"
+        :tilt="45"
         map-id="trip-progress-map"
+        @camera-idle="onCameraIdle"
       />
       <div v-if="etaText" class="eta-chip">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
         {{ etaText }} to destination
       </div>
+
+      <!-- Recenter button — shown when user has panned away -->
+      <button v-if="!isFollowing" class="recenter-btn" type="button" @click="isFollowing = true" aria-label="Recenter on driver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Sheet -->
@@ -79,9 +89,18 @@ const auth = useAuthStore()
 const routePath = ref<Array<{ lat: number; lng: number }>>([])
 const etaDurationMin = ref<number | null>(null)
 
-// Directional car icon — bearing tracked for web Symbol rotation
+// Navigation mode
+const isFollowing = ref(true)
 const driverBearing = ref(0)
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
+
+function onCameraIdle(coords: { lat: number; lng: number }) {
+  if (!isFollowing.value) return
+  const driverPos = booking.driverLocation
+  if (!driverPos) return
+  const dist = Math.hypot(coords.lat - driverPos.lat, coords.lng - driverPos.lng)
+  if (dist > 0.005) isFollowing.value = false
+}
 
 const mapCenter = computed(() =>
   booking.driverLocation
@@ -136,41 +155,35 @@ const driverSubtitle = computed(() => {
   return `${vehicle.model} · ${vehicle.plateNumber}`
 })
 
-async function fetchRoute() {
-  if (!booking.pickup || !booking.dropoff) return
-  try {
-    const route = await api.route(
-      booking.pickup.lat, booking.pickup.lng,
-      booking.dropoff.lat, booking.dropoff.lng
-    )
-    routePath.value = route.polyline ? decodePolyline(route.polyline) : []
-  } catch {
-    routePath.value = [
-      { lat: booking.pickup.lat, lng: booking.pickup.lng },
-      { lat: booking.dropoff.lat, lng: booking.dropoff.lng }
-    ]
-  }
-}
+// Sequence counter — discard responses that arrive out of order
+let routeSeq = 0
 
-async function fetchLiveEta() {
-  if (!booking.driverLocation || !booking.dropoff) {
-    etaDurationMin.value = null
-    return
-  }
+// Fetch route from driver's CURRENT position to dropoff — called on each location update
+async function fetchRoute() {
+  if (!booking.driverLocation || !booking.dropoff) return
+  const seq = ++routeSeq
+  const fromLat = booking.driverLocation.lat
+  const fromLng = booking.driverLocation.lng
+  const toLat   = booking.dropoff.lat
+  const toLng   = booking.dropoff.lng
   try {
-    const route = await api.route(
-      booking.driverLocation.lat, booking.driverLocation.lng,
-      booking.dropoff.lat, booking.dropoff.lng
-    )
+    const route = await api.route(fromLat, fromLng, toLat, toLng)
+    if (seq !== routeSeq) return  // a newer call already resolved, discard this one
+    routePath.value = route.polyline ? decodePolyline(route.polyline) : [
+      { lat: fromLat, lng: fromLng },
+      { lat: toLat,   lng: toLng   }
+    ]
     etaDurationMin.value = Math.max(1, Math.round(route.durationSeconds / 60))
   } catch {
+    if (seq !== routeSeq) return
+    routePath.value = [{ lat: fromLat, lng: fromLng }, { lat: toLat, lng: toLng }]
     etaDurationMin.value = null
   }
 }
 
 watch(() => booking.driverLocation, (newLoc) => {
   updateDriverBearing(newLoc)
-  fetchLiveEta()
+  fetchRoute()
 })
 
 onMounted(() => {
@@ -190,7 +203,6 @@ onMounted(() => {
     prevDriverLocation.value = { ...booking.driverLocation }
   }
   fetchRoute()
-  fetchLiveEta()
 })
 
 watch(
@@ -219,6 +231,26 @@ watch(
 }
 
 .map-area :deep(.native-map) { border-radius: 0; height: 100%; min-height: 100%; }
+
+.recenter-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: #00c4bc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.recenter-btn:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(0,0,0,0.14); }
 
 .eta-chip {
   position: absolute;
