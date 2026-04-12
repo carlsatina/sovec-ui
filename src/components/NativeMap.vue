@@ -32,7 +32,7 @@ const props = withDefaults(
     interactive?: boolean
     followDriver?: boolean  // lock camera to center, skipping fitBounds
     mapBearing?: number     // map heading in degrees (0 = north up); used in navigation mode
-    tilt?: number           // camera tilt in degrees 0-45; used in navigation mode
+    tilt?: number           // camera tilt in degrees 0-67.5; used in navigation mode
   }>(),
   {
     mapId: 'solvec-map',
