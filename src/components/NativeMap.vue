@@ -26,7 +26,7 @@ const props = withDefaults(
       draggable?: boolean
       iconUrl?: string
       iconSize?: { width: number; height: number }
-      bearing?: number   // degrees 0-360; when set, web map uses a rotated Symbol instead of a data URL
+      bearing?: number   // degrees 0-360; native uses Marker.rotation, web uses rotated SymbolPath
     }>
     path?: Array<{ lat: number; lng: number }>
     interactive?: boolean
@@ -115,7 +115,8 @@ async function syncOverlays() {
         title: item.title,
         draggable: item.draggable ?? false,
         iconUrl: item.iconUrl,
-        iconSize: item.iconSize
+        iconSize: item.iconSize,
+        rotation: item.bearing ?? 0
       }))
       markerIds.value = await map.value.addMarkers(markers)
     }
