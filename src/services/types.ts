@@ -87,6 +87,7 @@ export type RouteResponse = {
   polyline: string
   distanceMeters: number
   durationSeconds: number
+  tollEstimate: number   // 0 if no tolls on route
 }
 
 export type DriverApplication = {

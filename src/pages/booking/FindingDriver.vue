@@ -323,7 +323,8 @@ async function loadRoute() {
   try {
     const route = await api.route(
       booking.pickup.lat, booking.pickup.lng,
-      booking.dropoff.lat, booking.dropoff.lng
+      booking.dropoff.lat, booking.dropoff.lng,
+      true
     )
     routePath.value = route.polyline ? decodePolyline(route.polyline) : []
     routeDistanceKm.value = route.distanceMeters / 1000

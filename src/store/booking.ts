@@ -27,6 +27,7 @@ export const useBookingStore = defineStore('booking', () => {
   const rideType = ref<RideType>('ECO')
   const paymentMethod = ref<PaymentMethod>('CASH')
   const fareEstimate = ref<{ total: number; currency: string; distanceKm?: number; durationMin?: number } | null>(null)
+  const tollEstimate = ref<number>(0)
   const rideId = ref<string | null>(null)
   const rideStatus = ref<string | null>(null)
   const assignedDriver = ref<AssignedDriver | null>(null)
@@ -57,6 +58,10 @@ export const useBookingStore = defineStore('booking', () => {
 
   function setPaymentMethod(method: PaymentMethod) {
     paymentMethod.value = method
+  }
+
+  function setTollEstimate(amount: number) {
+    tollEstimate.value = amount
   }
 
   async function estimateFare() {
@@ -221,6 +226,7 @@ export const useBookingStore = defineStore('booking', () => {
     rideType.value = 'ECO'
     paymentMethod.value = 'CASH'
     fareEstimate.value = null
+    tollEstimate.value = 0
     rideId.value = null
     rideStatus.value = null
     assignedDriver.value = null
@@ -235,6 +241,7 @@ export const useBookingStore = defineStore('booking', () => {
     rideType,
     paymentMethod,
     fareEstimate,
+    tollEstimate,
     rideId,
     rideStatus,
     assignedDriver,
@@ -246,6 +253,7 @@ export const useBookingStore = defineStore('booking', () => {
     setDropoff,
     setRideType,
     setPaymentMethod,
+    setTollEstimate,
     estimateFare,
     createBooking,
     cancelBooking,

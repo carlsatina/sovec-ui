@@ -392,7 +392,8 @@ async function fetchRoute() {
   try {
     const route = await api.route(
       booking.driverLocation.lat, booking.driverLocation.lng,
-      booking.pickup.lat, booking.pickup.lng
+      booking.pickup.lat, booking.pickup.lng,
+      true
     )
     routePath.value       = route.polyline ? decodePolyline(route.polyline) : []
     etaDurationMin.value  = Math.max(1, Math.round(route.durationSeconds / 60))

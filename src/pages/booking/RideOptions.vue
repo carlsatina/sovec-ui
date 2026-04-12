@@ -98,6 +98,10 @@
             <span class="fare-currency">PHP</span>{{ fareLow }}–{{ fareHigh }}
           </div>
           <div class="fare-label">Estimated</div>
+          <div v-if="booking.tollEstimate > 0" class="toll-badge">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            +PHP {{ booking.tollEstimate.toFixed(0) }} toll
+          </div>
         </div>
 
         <!-- Selected check -->
@@ -203,14 +207,17 @@ async function loadRoute() {
   try {
     const route = await api.route(
       booking.pickup.lat, booking.pickup.lng,
-      booking.dropoff.lat, booking.dropoff.lng
+      booking.dropoff.lat, booking.dropoff.lng,
+      true
     )
     routePath.value = route.polyline ? decodePolyline(route.polyline) : []
     routeDistanceKm.value = route.distanceMeters / 1000
     routeDurationMin.value = Math.max(1, Math.round(route.durationSeconds / 60))
+    booking.setTollEstimate(route.tollEstimate ?? 0)
   } catch (err) {
     routeError.value = err instanceof Error ? err.message : String(err)
     routePath.value = []
+    booking.setTollEstimate(0)
   }
 }
 
@@ -551,6 +558,20 @@ async function bookRide() {
   color: #C4BAB0;
   font-weight: 500;
   margin-top: 2px;
+}
+
+.toll-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  background: rgba(212,160,23,0.1);
+  color: #7A5C0A;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .selected-check {

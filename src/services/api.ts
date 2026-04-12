@@ -64,9 +64,9 @@ export const api = {
   placeDetails: (placeId: string) => request<PlaceDetailsResponse>(`/geo/details?placeId=${encodeURIComponent(placeId)}`),
   reverseGeocode: (lat: number, lng: number) =>
     request<ReverseGeocodeResponse>(`/geo/reverse?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`),
-  route: (originLat: number, originLng: number, destinationLat: number, destinationLng: number) =>
+  route: (originLat: number, originLng: number, destinationLat: number, destinationLng: number, optimal = false) =>
     request<RouteResponse>(
-      `/geo/route?originLat=${encodeURIComponent(String(originLat))}&originLng=${encodeURIComponent(String(originLng))}&destinationLat=${encodeURIComponent(String(destinationLat))}&destinationLng=${encodeURIComponent(String(destinationLng))}`
+      `/geo/route?originLat=${encodeURIComponent(String(originLat))}&originLng=${encodeURIComponent(String(originLng))}&destinationLat=${encodeURIComponent(String(destinationLat))}&destinationLng=${encodeURIComponent(String(destinationLng))}${optimal ? '&optimal=true' : ''}`
     ),
   createDriverApplication: (payload: DriverApplicationCreate) =>
     request<{ ok: boolean; application: DriverApplication }>('/driver-applications', { method: 'POST', body: payload }),
