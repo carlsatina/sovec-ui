@@ -187,6 +187,7 @@ export const useBookingStore = defineStore('booking', () => {
     socket.on('ride:status', rideStatusHandler)
 
     driverLocationHandler = (payload: { lat: number; lng: number }) => {
+      console.log(`[Socket] driver:location received — lat:${payload.lat.toFixed(6)} lng:${payload.lng.toFixed(6)}`)
       driverLocation.value = { lat: payload.lat, lng: payload.lng }
     }
     socket.on('driver:location', driverLocationHandler)

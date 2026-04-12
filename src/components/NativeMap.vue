@@ -349,9 +349,15 @@ watch(
 watch(
   () => [props.center.lat, props.center.lng, props.zoom, props.mapBearing, props.tilt, props.followDriver],
   async () => {
+    console.log(`[NativeMap:${props.mapId}] camera watch fired — center:(${props.center.lat.toFixed(6)},${props.center.lng.toFixed(6)}) follow:${props.followDriver}`)
     if (isNative.value) {
-      if (!map.value) return
-      await moveCameraToData()
+      if (!map.value) { console.warn(`[NativeMap:${props.mapId}] camera watch fired but map not ready`); return }
+      try {
+        await moveCameraToData()
+        console.log(`[NativeMap:${props.mapId}] setCamera OK`)
+      } catch (err) {
+        console.error(`[NativeMap:${props.mapId}] setCamera FAILED`, err)
+      }
     } else {
       updateWebCamera()
     }

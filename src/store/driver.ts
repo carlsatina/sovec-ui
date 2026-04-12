@@ -13,8 +13,9 @@ export const useDriverStore = defineStore('driver', () => {
   const arrivedAtPickup = ref(false)
   const driverLocation = ref<{ lat: number; lng: number } | null>(null)
 
-  // watchPosition handle; null when not tracking
-  let locationWatchId: number | null = null
+  // watchPosition handles — null when not tracking
+  let locationWatchId: number | null = null         // high-accuracy GPS watch
+  let locationFallbackId: number | null = null      // low-accuracy network fallback watch
   // Timestamp of last server/socket emission — throttled to avoid API spam
   let lastEmitMs = 0
   // Minimum ms between server emissions (3 s keeps passengers smooth without hammering the API)
@@ -54,15 +55,26 @@ export const useDriverStore = defineStore('driver', () => {
 
   // ── Continuous GPS tracking ───────────────────────────────────────────────
   //
-  // Uses watchPosition (continuous hardware GPS) instead of polling getCurrentPosition.
-  // driverLocation updates on every GPS fix (~1-3 s on a phone) so the driver's own
-  // map is always smooth.  Server/socket emissions are throttled to EMIT_INTERVAL_MS
-  // so we don't hammer the API or flood the passenger with too many updates.
+  // Uses a dual-watch strategy to guarantee location updates on Android:
+  //
+  //   Watch 1 (high accuracy) — uses GPS satellite; accurate but can time out when
+  //     the device is indoors or GPS hasn't locked yet. If it times out, the null
+  //     error callback silently swallows the failure — so Watch 2 is essential.
+  //
+  //   Watch 2 (low accuracy fallback) — uses network/WiFi location; always fires
+  //     even when GPS is unavailable. Less precise (~50 m) but guarantees the app
+  //     always has a recent position and the maps always move.
+  //
+  // driverLocation is updated immediately on EVERY callback from either watch.
+  // Server/socket emissions are throttled to EMIT_INTERVAL_MS so we don't hammer
+  // the backend or flood the passenger with redundant events.
 
   async function handlePosition(driverId: string, pos: GeolocationPosition) {
-    const { latitude: lat, longitude: lng } = pos.coords
+    const { latitude: lat, longitude: lng, accuracy } = pos.coords
     // Update the driver's own reactive location immediately (smooth map on driver's screen)
     driverLocation.value = { lat, lng }
+
+    console.log(`[GPS] fix — lat:${lat.toFixed(6)} lng:${lng.toFixed(6)} accuracy:${accuracy?.toFixed(0)}m`)
 
     // Throttle: only push to server/passenger every EMIT_INTERVAL_MS
     const now = Date.now()
@@ -78,6 +90,7 @@ export const useDriverStore = defineStore('driver', () => {
     if (currentRide.value) {
       const socket = getSocket()
       socket.emit('driver:location_update', { rideId: currentRide.value.id, lat, lng })
+      console.log(`[GPS] emitted driver:location_update for ride ${currentRide.value.id}`)
     }
   }
 
@@ -85,25 +98,35 @@ export const useDriverStore = defineStore('driver', () => {
     stopLocationTracking()
     if (!navigator.geolocation) return
 
-    const geoOptions: PositionOptions = {
-      enableHighAccuracy: true,   // use hardware GPS, not cell-tower/WiFi
-      maximumAge: 0,              // always request a fresh fix
-      timeout: 10000
-    }
+    const onPosition = (pos: GeolocationPosition) => { void handlePosition(driverId, pos) }
 
-    // Get an immediate fix so driver's screen and passengers update right away
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { void handlePosition(driverId, pos) },
-      null,
-      geoOptions
-    )
+    // Immediate low-accuracy fix so the map isn't blank while GPS warms up
+    navigator.geolocation.getCurrentPosition(onPosition, null, {
+      enableHighAccuracy: false,
+      maximumAge: 5000,
+      timeout: 10000,
+    })
 
-    // Watch continuously — fires every time the device detects movement
-    locationWatchId = navigator.geolocation.watchPosition(
-      (pos) => { void handlePosition(driverId, pos) },
-      null,
-      geoOptions
-    )
+    // Watch 1: high-accuracy GPS (most precise; may be slow to lock or time out indoors)
+    locationWatchId = navigator.geolocation.watchPosition(onPosition, (err) => {
+      console.warn(`[GPS] high-accuracy watch error — code:${err.code} msg:${err.message}`)
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 20000,
+    })
+
+    // Watch 2: low-accuracy network/WiFi fallback (always fires, even without GPS lock)
+    // This guarantees the map keeps moving even when Watch 1 can't get a satellite fix.
+    locationFallbackId = navigator.geolocation.watchPosition(onPosition, (err) => {
+      console.warn(`[GPS] low-accuracy watch error — code:${err.code} msg:${err.message}`)
+    }, {
+      enableHighAccuracy: false,
+      maximumAge: 3000,
+      timeout: 10000,
+    })
+
+    console.log(`[GPS] tracking started — watchId:${locationWatchId} fallbackId:${locationFallbackId}`)
   }
 
   function stopLocationTracking() {
@@ -111,12 +134,16 @@ export const useDriverStore = defineStore('driver', () => {
       navigator.geolocation.clearWatch(locationWatchId)
       locationWatchId = null
     }
+    if (locationFallbackId !== null) {
+      navigator.geolocation.clearWatch(locationFallbackId)
+      locationFallbackId = null
+    }
     lastEmitMs = 0
   }
 
   // Start tracking only if not already running — safe to call from any page as a safety net
   function ensureLocationTracking(driverId: string) {
-    if (locationWatchId !== null) return
+    if (locationWatchId !== null || locationFallbackId !== null) return
     startLocationTracking(driverId)
   }
 
