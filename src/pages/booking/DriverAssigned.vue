@@ -5,12 +5,12 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="17"
+        :zoom="19"
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
         :map-bearing="driverBearing"
-        :tilt="45"
+        :tilt="0"
         map-id="driver-assigned-map"
         @camera-idle="onCameraIdle"
       />

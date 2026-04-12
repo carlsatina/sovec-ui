@@ -59,55 +59,60 @@
 
       <!-- ── Ride option card ── -->
       <div class="option-card selected">
-        <!-- Car thumbnail -->
-        <div class="car-thumb" aria-hidden="true">
-          <svg viewBox="0 0 64 32" fill="none">
-            <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#60B45A"/>
-            <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#3D7A38"/>
-            <path d="M20 14 C21 9 24 7 31 7 L31 14Z" fill="rgba(235,255,235,0.55)"/>
-            <path d="M33 14 L33 7 C40 7 43 9 44 14Z" fill="rgba(235,255,235,0.55)"/>
-            <circle cx="15" cy="26" r="4" fill="#2D1A06"/>
-            <circle cx="15" cy="26" r="1.8" fill="#60B45A"/>
-            <circle cx="49" cy="26" r="4" fill="#2D1A06"/>
-            <circle cx="49" cy="26" r="1.8" fill="#60B45A"/>
-            <rect x="59" y="16" width="3" height="3" rx="1.5" fill="#FFF9C4"/>
-            <rect x="2"  y="16" width="3" height="3" rx="1.5" fill="#f87171" opacity="0.7"/>
-            <!-- bolt -->
-            <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#D4A017"/>
-          </svg>
-        </div>
 
-        <!-- Name + meta -->
-        <div class="option-body">
-          <div class="option-name-row">
+        <!-- Top row: car + name/badge + check -->
+        <div class="option-top">
+          <div class="car-thumb" aria-hidden="true">
+            <svg viewBox="0 0 64 32" fill="none">
+              <rect x="3" y="14" width="58" height="11" rx="3.5" fill="#60B45A"/>
+              <path d="M15 14 C17 8 22 5 32 5 C42 5 47 8 49 14Z" fill="#3D7A38"/>
+              <path d="M20 14 C21 9 24 7 31 7 L31 14Z" fill="rgba(235,255,235,0.55)"/>
+              <path d="M33 14 L33 7 C40 7 43 9 44 14Z" fill="rgba(235,255,235,0.55)"/>
+              <circle cx="15" cy="26" r="4" fill="#2D1A06"/>
+              <circle cx="15" cy="26" r="1.8" fill="#60B45A"/>
+              <circle cx="49" cy="26" r="4" fill="#2D1A06"/>
+              <circle cx="49" cy="26" r="1.8" fill="#60B45A"/>
+              <rect x="59" y="16" width="3" height="3" rx="1.5" fill="#FFF9C4"/>
+              <rect x="2"  y="16" width="3" height="3" rx="1.5" fill="#f87171" opacity="0.7"/>
+              <path d="M35 6 L32 12 H35 L33 17 L38 11 H35 L37 6Z" fill="#D4A017"/>
+            </svg>
+          </div>
+          <div class="option-identity">
             <span class="option-name">E-Ride Taxi</span>
             <span class="ev-badge">⚡ EV</span>
           </div>
-          <div class="option-meta-row">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span class="option-meta">4 seats</span>
-            <span class="meta-dot" aria-hidden="true">·</span>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-            <span class="option-meta">{{ etaText }}</span>
+          <div class="selected-check" aria-hidden="true">
+            <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="2,7 5.5,10.5 12,3"/></svg>
           </div>
         </div>
 
-        <!-- Fare -->
-        <div class="fare-block">
-          <div class="fare-range">
-            <span class="fare-currency">PHP</span>{{ fareLow }}–{{ fareHigh }}
+        <!-- Divider -->
+        <div class="option-divider" aria-hidden="true"></div>
+
+        <!-- Bottom row: info chips + fare -->
+        <div class="option-bottom">
+          <div class="info-chips">
+            <span class="info-chip">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              4 seats
+            </span>
+            <span class="info-chip">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+              {{ etaText }}
+            </span>
           </div>
-          <div class="fare-label">Estimated</div>
-          <div v-if="booking.tollEstimate > 0" class="toll-badge">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            +PHP {{ booking.tollEstimate.toFixed(0) }} toll
+          <div class="fare-block">
+            <div class="fare-range">
+              <span class="fare-currency">PHP</span>{{ fareLow }}–{{ fareHigh }}
+            </div>
+            <div class="fare-label">Estimated</div>
+            <div v-if="booking.tollEstimate > 0" class="toll-badge">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              +PHP {{ booking.tollEstimate.toFixed(0) }} toll
+            </div>
           </div>
         </div>
 
-        <!-- Selected check -->
-        <div class="selected-check" aria-hidden="true">
-          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="2,7 5.5,10.5 12,3"/></svg>
-        </div>
       </div>
 
       <!-- ── Details row (payment + points) ── -->
@@ -442,11 +447,10 @@ async function bookRide() {
   background: #fff;
   border: 1.5px solid #EDE8E0;
   border-radius: 20px;
-  padding: 14px 14px 14px 14px;
-  display: grid;
-  grid-template-columns: 72px 1fr auto 26px;
-  align-items: center;
-  gap: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   transition: border-color 0.15s, box-shadow 0.15s;
   cursor: pointer;
 }
@@ -458,10 +462,17 @@ async function bookRide() {
   box-shadow: 0 4px 20px rgba(96,180,90,0.14);
 }
 
-/* Car illustration thumbnail */
+/* Top row */
+.option-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Car illustration */
 .car-thumb {
-  width: 72px;
-  height: 44px;
+  width: 80px;
+  height: 48px;
   border-radius: 14px;
   background: linear-gradient(135deg, #EBF7EA 0%, #D4F0D2 100%);
   display: flex;
@@ -478,21 +489,17 @@ async function bookRide() {
   display: block;
 }
 
-.option-body {
+/* Name + badge */
+.option-identity {
+  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
 }
 
-.option-name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .option-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   color: #1A1008;
   white-space: nowrap;
@@ -506,41 +513,76 @@ async function bookRide() {
   color: #3D7A38;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 999px;
   flex-shrink: 0;
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
 
-.option-meta-row {
+.selected-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #60B45A;
+  box-shadow: 0 0 0 3px rgba(96,180,90,0.2);
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.option-meta {
+/* Divider */
+.option-divider {
+  height: 1px;
+  background: #F0EBE3;
+  margin: 12px 0;
+}
+
+/* Bottom row */
+.option-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Info chips */
+.info-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #F5F2EE;
+  color: #5C4A30;
   font-size: 12px;
-  color: #B0A898;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
-.meta-dot {
-  color: #E0D8CC;
-  font-size: 14px;
-  line-height: 1;
+.info-chip svg {
+  color: #9CA3AF;
+  flex-shrink: 0;
 }
 
+/* Fare block */
 .fare-block {
   text-align: right;
   flex-shrink: 0;
 }
 
 .fare-range {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   color: #1A1008;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
@@ -550,41 +592,28 @@ async function bookRide() {
   color: #B0A898;
   margin-right: 1px;
   vertical-align: top;
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
 .fare-label {
   font-size: 10px;
   color: #C4BAB0;
   font-weight: 500;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .toll-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-top: 4px;
+  margin-top: 5px;
   background: rgba(212,160,23,0.1);
   color: #7A5C0A;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 999px;
   white-space: nowrap;
-}
-
-.selected-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #60B45A;
-  box-shadow: 0 0 0 3px rgba(96,180,90,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  justify-self: center;
 }
 
 /* ── Details row ── */
