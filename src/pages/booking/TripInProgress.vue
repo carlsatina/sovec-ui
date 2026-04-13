@@ -16,7 +16,7 @@
       />
       <div v-if="etaText" class="eta-chip">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-        {{ etaText }} to destination
+        {{ etaText }}{{ distanceText ? ' · ' + distanceText : '' }} to destination
       </div>
 
       <!-- Recenter button — shown when user has panned away -->
@@ -34,6 +34,14 @@
       <div class="status-banner">
         <div class="status-dot" aria-hidden="true"></div>
         <span>Trip in progress</span>
+      </div>
+
+      <!-- Task 5: Trip progress bar -->
+      <div v-if="totalDistanceKm > 0" class="progress-bar-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
+        </div>
+        <span class="progress-label">{{ progressPercent.toFixed(0) }}% to destination</span>
       </div>
 
       <!-- Driver card -->
@@ -67,12 +75,18 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share trip status
       </button>
+
+      <!-- Task 7: Fare-may-vary notice -->
+      <p class="fare-notice">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Final fare may vary based on actual route and distance.
+      </p>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NativeMap from '../../components/NativeMap.vue'
 import { useBookingStore } from '../../store/booking'
@@ -81,18 +95,32 @@ import { api } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
+import { snapToPolyline } from '../../utils/gpsSmoothing'
 
 const router = useRouter()
 const booking = useBookingStore()
 const auth = useAuthStore()
 
-const routePath = ref<Array<{ lat: number; lng: number }>>([])
-const etaDurationMin = ref<number | null>(null)
+const routePath        = ref<Array<{ lat: number; lng: number }>>([])
+const etaDurationMin   = ref<number | null>(null)
+const distanceKm       = ref<number | null>(null)   // Task 4: remaining distance
+const totalDistanceKm  = ref(0)                      // Task 5: for progress bar
 
 // Navigation mode
-const isFollowing = ref(true)
-const driverBearing = ref(0)
+const isFollowing        = ref(true)
+const driverBearing      = ref(0)
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
+
+// Task 6: screen wake lock
+let wakeLock: WakeLockSentinel | null = null
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return
+  try { wakeLock = await (navigator as any).wakeLock.request('screen') } catch { /* non-fatal */ }
+}
+function releaseWakeLock() {
+  wakeLock?.release().catch(() => {})
+  wakeLock = null
+}
 
 function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
@@ -117,11 +145,11 @@ const mapMarkers = computed(() => {
     bearing?: number
   }> = []
   if (booking.driverLocation) {
+    const snapped = snapToPolyline(booking.driverLocation, routePath.value)
     markers.push({
-      ...booking.driverLocation,
+      lat: snapped.lat,
+      lng: snapped.lng,
       title: 'Driver',
-      // bearing → web map uses SVG Symbol with rotation (reliable on JS API)
-      // iconUrl → native Capacitor plugin; must be an HTTPS URL (data: URIs not supported)
       bearing: driverBearing.value,
       iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png',
       iconSize: { width: 36, height: 36 },
@@ -145,7 +173,13 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null | undef
   prevDriverLocation.value = { ...newLoc }
 }
 
-const etaText = computed(() => etaDurationMin.value != null ? `~${etaDurationMin.value} min` : null)
+const etaText        = computed(() => etaDurationMin.value != null ? `~${etaDurationMin.value} min` : null)
+const distanceText   = computed(() => distanceKm.value != null ? `${distanceKm.value.toFixed(1)} km` : null)
+const progressPercent = computed(() => {
+  if (totalDistanceKm.value <= 0 || distanceKm.value == null) return 0
+  const covered = totalDistanceKm.value - distanceKm.value
+  return Math.min(100, Math.max(0, (covered / totalDistanceKm.value) * 100))
+})
 const dropoffShort = computed(() => booking.dropoff?.address?.split(',')[0] ?? '')
 const driverName = computed(() => booking.assignedDriver?.name || 'Your Driver')
 const driverPhone = computed(() => booking.assignedDriver?.phone ?? '')
@@ -155,28 +189,42 @@ const driverSubtitle = computed(() => {
   return `${vehicle.model} · ${vehicle.plateNumber}`
 })
 
-// Sequence counter — discard responses that arrive out of order
+// Sequence counter + last snapped fetch position
 let routeSeq = 0
+let lastFetchSnappedLat = 0
+let lastFetchSnappedLng = 0
+const ROUTE_REFETCH_THRESHOLD = 0.0003  // ~30 m of road progress
 
-// Fetch route from driver's CURRENT position to dropoff — called on each location update
+// Fetch route from driver's snapped position to dropoff — called on each location update
 async function fetchRoute() {
   if (!booking.driverLocation || !booking.dropoff) return
-  const seq = ++routeSeq
-  const fromLat = booking.driverLocation.lat
-  const fromLng = booking.driverLocation.lng
+
+  const snapped = snapToPolyline(booking.driverLocation, routePath.value)
+  const fromLat = snapped.lat
+  const fromLng = snapped.lng
   const toLat   = booking.dropoff.lat
   const toLng   = booking.dropoff.lng
+
+  const moved = Math.hypot(fromLat - lastFetchSnappedLat, fromLng - lastFetchSnappedLng)
+  if (moved < ROUTE_REFETCH_THRESHOLD && routeSeq > 0) return
+
+  const seq = ++routeSeq
+  lastFetchSnappedLat = fromLat
+  lastFetchSnappedLng = fromLng
+
   try {
     const route = await api.route(fromLat, fromLng, toLat, toLng)
-    if (seq !== routeSeq) return  // a newer call already resolved, discard this one
+    if (seq !== routeSeq) return
     routePath.value = route.polyline ? decodePolyline(route.polyline) : [
       { lat: fromLat, lng: fromLng },
       { lat: toLat,   lng: toLng   }
     ]
     etaDurationMin.value = Math.max(1, Math.round(route.durationSeconds / 60))
+    distanceKm.value     = route.distanceMeters / 1000
+    if (totalDistanceKm.value === 0) totalDistanceKm.value = distanceKm.value
   } catch {
     if (seq !== routeSeq) return
-    routePath.value = [{ lat: fromLat, lng: fromLng }, { lat: toLat, lng: toLng }]
+    routePath.value  = [{ lat: fromLat, lng: fromLng }, { lat: toLat, lng: toLng }]
     etaDurationMin.value = null
   }
 }
@@ -203,6 +251,7 @@ onMounted(() => {
     prevDriverLocation.value = { ...booking.driverLocation }
   }
   fetchRoute()
+  acquireWakeLock()  // Task 6
 })
 
 watch(
@@ -214,6 +263,10 @@ watch(
     }
   }
 )
+
+onUnmounted(() => {
+  releaseWakeLock()  // Task 6
+})
 </script>
 
 <style scoped>
@@ -395,4 +448,43 @@ watch(
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
+
+/* Task 5: progress bar */
+.progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.progress-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0,196,188,0.15);
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #00c4bc, #00e5dc);
+  transition: width 1.2s ease;
+}
+.progress-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #007d78;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Task 7: fare-may-vary notice */
+.fare-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+  padding: 0 2px;
+}
+.fare-notice svg { flex-shrink: 0; opacity: 0.7; }
 </style>

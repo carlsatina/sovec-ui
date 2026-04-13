@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { api } from '../services/api'
 import { getSocket } from '../services/socket'
 import type { RideDetails } from '../services/types'
+import { isGpsOutlier, smoothPosition } from '../utils/gpsSmoothing'
 
 export const useDriverStore = defineStore('driver', () => {
   const isOnline = ref(false)
@@ -20,6 +21,9 @@ export const useDriverStore = defineStore('driver', () => {
   let lastEmitMs = 0
   // Minimum ms between server emissions (3 s keeps passengers smooth without hammering the API)
   const EMIT_INTERVAL_MS = 3000
+  // GPS smoothing state
+  let lastAcceptedMs = 0
+  let smoothedLocation: { lat: number; lng: number } | null = null
   // Socket reconnect handler reference (stored so it can be removed on cleanup)
   let driverReconnectHandler: (() => void) | null = null
 
@@ -71,25 +75,41 @@ export const useDriverStore = defineStore('driver', () => {
 
   async function handlePosition(driverId: string, pos: GeolocationPosition) {
     const { latitude: lat, longitude: lng, accuracy } = pos.coords
-    // Update the driver's own reactive location immediately (smooth map on driver's screen)
-    driverLocation.value = { lat, lng }
+    const now = Date.now()
+    const raw = { lat, lng }
+
+    // ── Layer 1: outlier rejection ──────────────────────────────────────────
+    if (smoothedLocation && isGpsOutlier(smoothedLocation, raw, now - lastAcceptedMs)) {
+      console.warn(`[GPS] outlier discarded — lat:${lat.toFixed(6)} lng:${lng.toFixed(6)}`)
+      return
+    }
+
+    // ── Layer 2: low-pass smoothing ─────────────────────────────────────────
+    smoothedLocation = smoothedLocation
+      ? smoothPosition(smoothedLocation, raw)
+      : raw
+    lastAcceptedMs = now
+
+    const { lat: sLat, lng: sLng } = smoothedLocation
+
+    // Update the driver's own reactive location with the smoothed position
+    driverLocation.value = { lat: sLat, lng: sLng }
 
     console.log(`[GPS] fix — lat:${lat.toFixed(6)} lng:${lng.toFixed(6)} accuracy:${accuracy?.toFixed(0)}m`)
 
     // Throttle: only push to server/passenger every EMIT_INTERVAL_MS
-    const now = Date.now()
     if (now - lastEmitMs < EMIT_INTERVAL_MS) return
     lastEmitMs = now
 
     try {
-      await api.driverUpdateLocation(driverId, lat, lng)
+      await api.driverUpdateLocation(driverId, sLat, sLng)
     } catch {
       // Non-fatal — location update failure should not crash the ride
     }
 
     if (currentRide.value) {
       const socket = getSocket()
-      socket.emit('driver:location_update', { rideId: currentRide.value.id, lat, lng })
+      socket.emit('driver:location_update', { rideId: currentRide.value.id, lat: sLat, lng: sLng })
       console.log(`[GPS] emitted driver:location_update for ride ${currentRide.value.id}`)
     }
   }
@@ -138,6 +158,8 @@ export const useDriverStore = defineStore('driver', () => {
       navigator.geolocation.clearWatch(locationFallbackId)
       locationFallbackId = null
     }
+    smoothedLocation = null
+    lastAcceptedMs   = 0
     lastEmitMs = 0
   }
 

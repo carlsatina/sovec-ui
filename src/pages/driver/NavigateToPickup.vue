@@ -97,6 +97,7 @@ import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
+import { snapToPolyline } from '../../utils/gpsSmoothing'
 
 const router = useRouter()
 const driver = useDriverStore()
@@ -173,26 +174,28 @@ const mapsLink = computed(() => {
 })
 
 let routeSeq = 0
-let lastRouteFetchLat = 0
-let lastRouteFetchLng = 0
-const ROUTE_REFETCH_THRESHOLD = 0.0003  // ~30 m
+let lastFetchSnappedLat = 0
+let lastFetchSnappedLng = 0
+const ROUTE_REFETCH_THRESHOLD = 0.0003  // ~30 m of road progress
 
 async function fetchRouteToPickup() {
   if (!driver.currentRide || !driver.driverLocation) {
     routeDurationMin.value = null
     return
   }
-  const fromLat = driver.driverLocation.lat
-  const fromLng = driver.driverLocation.lng
+
+  const snapped = snapToPolyline(driver.driverLocation, routePath.value)
+  const fromLat = snapped.lat
+  const fromLng = snapped.lng
   const toLat   = driver.currentRide.pickupLat
   const toLng   = driver.currentRide.pickupLng
 
-  const moved = Math.hypot(fromLat - lastRouteFetchLat, fromLng - lastRouteFetchLng)
+  const moved = Math.hypot(fromLat - lastFetchSnappedLat, fromLng - lastFetchSnappedLng)
   if (moved < ROUTE_REFETCH_THRESHOLD && routeSeq > 0) return
 
   const seq = ++routeSeq
-  lastRouteFetchLat = fromLat
-  lastRouteFetchLng = fromLng
+  lastFetchSnappedLat = fromLat
+  lastFetchSnappedLng = fromLng
 
   try {
     const route = await api.route(fromLat, fromLng, toLat, toLng)
