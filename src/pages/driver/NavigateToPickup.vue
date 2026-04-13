@@ -4,12 +4,12 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="18"
+        :zoom="16"
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
         :map-bearing="driverBearing"
-        :tilt="0"
+        :tilt="30"
         map-id="driver-pickup-map"
         @camera-idle="onCameraIdle"
       />
@@ -97,7 +97,7 @@ import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
-import { snapToPolyline } from '../../utils/gpsSmoothing'
+import { snapToPolyline, lookAheadCenter } from '../../utils/gpsSmoothing'
 
 const router = useRouter()
 const driver = useDriverStore()
@@ -116,7 +116,8 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
   const driverPos = driver.driverLocation
   if (!driverPos) return
-  const dist = Math.hypot(coords.lat - driverPos.lat, coords.lng - driverPos.lng)
+  const expected = lookAheadCenter(driverPos, driverBearing.value)
+  const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
 
@@ -129,10 +130,11 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null) {
   prevDriverLocation.value = { ...newLoc }
 }
 
-const mapCenter = computed(() =>
-  driver.driverLocation
-    ?? (driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 })
-)
+const mapCenter = computed(() => {
+  const pos = driver.driverLocation
+  if (!pos) return driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 }
+  return lookAheadCenter(pos, driverBearing.value)
+})
 
 const mapMarkers = computed(() => {
   if (!driver.currentRide) return []
@@ -142,9 +144,10 @@ const mapMarkers = computed(() => {
     bearing?: number
   }> = []
   if (driver.driverLocation) {
+    const snapped = snapToPolyline(driver.driverLocation, routePath.value)
     markers.push({
-      lat: driver.driverLocation.lat,
-      lng: driver.driverLocation.lng,
+      lat: snapped.lat,
+      lng: snapped.lng,
       title: 'Driver',
       bearing: driverBearing.value,
       iconUrl: carMarkerIcon,

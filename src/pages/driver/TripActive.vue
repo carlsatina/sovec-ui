@@ -5,12 +5,12 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="19"
+        :zoom="16"
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
         :map-bearing="driverBearing"
-        :tilt="0"
+        :tilt="30"
         map-id="driver-trip-map"
         @camera-idle="onCameraIdle"
       />
@@ -49,30 +49,29 @@
         <span>Trip in progress</span>
       </div>
 
-      <!-- Passenger card -->
-      <div class="passenger-card">
-        <div class="p-avatar" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <!-- Passenger + drop-off card (merged) -->
+      <div class="info-card">
+        <div class="info-row">
+          <div class="p-avatar" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="p-info">
+            <div class="p-name">{{ passengerName }}</div>
+          </div>
+          <a v-if="passengerPhone" class="call-btn" :href="`tel:${passengerPhone}`" aria-label="Call passenger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
+          </a>
+          <div v-else class="call-btn call-btn-disabled" aria-label="Passenger phone unavailable">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
+          </div>
         </div>
-        <div class="p-info">
-          <div class="p-name">{{ passengerName }}</div>
-          <div class="p-sub">{{ dropoffShort }}</div>
-        </div>
-        <a v-if="passengerPhone" class="call-btn" :href="`tel:${passengerPhone}`" aria-label="Call passenger">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
-        </a>
-        <div v-else class="call-btn call-btn-disabled" aria-label="Passenger phone unavailable">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.07 9.81 2 2 0 015 7.07h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L9.09 14.91a16 16 0 006 6z"/></svg>
-        </div>
-      </div>
-
-      <!-- Drop-off address -->
-      <div class="address-card">
-        <span class="addr-dot dot-gold" aria-hidden="true"></span>
-        <div class="addr-body">
-          <div class="addr-label">Drop-off location</div>
-          <div class="addr-title">{{ dropoffShort }}</div>
-          <div class="addr-sub">{{ driver.currentRide?.dropoffAddress }}</div>
+        <div class="card-divider" aria-hidden="true"></div>
+        <div class="addr-row">
+          <span class="addr-dot dot-gold" aria-hidden="true"></span>
+          <div class="addr-body">
+            <div class="addr-title">{{ dropoffShort }}</div>
+            <div class="addr-sub">{{ driver.currentRide?.dropoffAddress }}</div>
+          </div>
         </div>
       </div>
 
@@ -148,7 +147,7 @@ import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
-import { snapToPolyline } from '../../utils/gpsSmoothing'
+import { snapToPolyline, lookAheadCenter } from '../../utils/gpsSmoothing'
 import { getSocket } from '../../services/socket'
 
 const router = useRouter()
@@ -193,7 +192,9 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
   const driverPos = driver.driverLocation
   if (!driverPos) return
-  const dist = Math.hypot(coords.lat - driverPos.lat, coords.lng - driverPos.lng)
+  // Compare against the expected look-ahead center, not the raw driver position
+  const expected = lookAheadCenter(driverPos, driverBearing.value)
+  const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
 
@@ -216,10 +217,11 @@ function checkArrival() {
   if (dist < ARRIVAL_THRESHOLD) nearDropoff.value = true
 }
 
-const mapCenter = computed(() =>
-  driver.driverLocation
-    ?? (driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 })
-)
+const mapCenter = computed(() => {
+  const pos = driver.driverLocation
+  if (!pos) return driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 }
+  return lookAheadCenter(pos, driverBearing.value)
+})
 
 const mapMarkers = computed(() => {
   if (!driver.currentRide) return []
@@ -393,8 +395,8 @@ async function endTrip() {
 
 .sheet {
   background: #f1f5f8; border-radius: 28px 28px 0 0;
-  margin-top: -28px; padding: 8px 16px 32px;
-  display: flex; flex-direction: column; gap: 10px;
+  margin-top: -28px; padding: 6px 12px 24px;
+  display: flex; flex-direction: column; gap: 8px;
   box-shadow: 0 -8px 32px rgba(0,0,0,0.1);
 }
 
@@ -440,37 +442,36 @@ async function endTrip() {
 }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-.passenger-card {
-  display: flex; align-items: center; gap: 12px;
-  background: #071524; border-radius: 18px; padding: 14px 16px;
+/* Merged passenger + dropoff card */
+.info-card {
+  background: #071524; border-radius: 18px; overflow: hidden;
+}
+.info-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
 }
 .p-avatar {
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 38px; height: 38px; border-radius: 50%;
   background: rgba(0,196,188,0.15); border: 1.5px solid rgba(0,196,188,0.25);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.p-name { font-size: 15px; font-weight: 700; color: #fff; }
-.p-sub  { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-name { font-size: 14px; font-weight: 700; color: #fff; }
 .p-info { flex: 1; min-width: 0; }
-
 .call-btn {
-  width: 40px; height: 40px; border-radius: 12px;
+  width: 36px; height: 36px; border-radius: 10px;
   background: rgba(0,196,188,0.15); border: 1px solid rgba(0,196,188,0.25);
   color: #00c4bc; display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; text-decoration: none;
 }
 .call-btn-disabled { opacity: 0.4; pointer-events: none; }
-
-.address-card {
-  background: #fff; border-radius: 18px; padding: 14px 16px;
-  display: grid; grid-template-columns: 20px minmax(0,1fr); gap: 12px; align-items: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+.card-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 0 14px; }
+.addr-row {
+  display: grid; grid-template-columns: 20px minmax(0,1fr);
+  gap: 10px; align-items: center; padding: 10px 14px;
 }
-.addr-dot   { width: 12px; height: 12px; flex-shrink: 0; }
-.dot-gold   { background: #f5a623; border-radius: 3px; box-shadow: 0 0 0 4px rgba(245,166,35,0.15); }
-.addr-label { font-size: 10px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
-.addr-title { font-size: 15px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.addr-sub   { font-size: 12px; color: #6b7280; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.addr-dot   { width: 11px; height: 11px; flex-shrink: 0; }
+.dot-gold   { background: #f5a623; border-radius: 3px; box-shadow: 0 0 0 3px rgba(245,166,35,0.2); }
+.addr-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.addr-sub   { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .fare-row {
   display: flex; align-items: center;

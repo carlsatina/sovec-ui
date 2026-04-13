@@ -19,8 +19,8 @@ export const useDriverStore = defineStore('driver', () => {
   let locationFallbackId: number | null = null      // low-accuracy network fallback watch
   // Timestamp of last server/socket emission — throttled to avoid API spam
   let lastEmitMs = 0
-  // Minimum ms between server emissions (3 s keeps passengers smooth without hammering the API)
-  const EMIT_INTERVAL_MS = 3000
+  // Minimum ms between server emissions (1.5 s balances passenger smoothness with API load)
+  const EMIT_INTERVAL_MS = 1500
   // GPS smoothing state
   let lastAcceptedMs = 0
   let smoothedLocation: { lat: number; lng: number } | null = null

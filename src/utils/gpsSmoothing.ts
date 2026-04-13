@@ -43,16 +43,36 @@ export function isGpsOutlier(
  *
  * alpha = 1.0 → raw GPS (no smoothing)
  * alpha = 0.0 → frozen (never moves)
- * Recommended: 0.25–0.35 for vehicle tracking — smooth but responsive.
+ * Recommended: 0.5 for vehicle tracking — balances jitter suppression with fast convergence.
  */
-export function smoothPosition(prev: LatLng, curr: LatLng, alpha = 0.3): LatLng {
+export function smoothPosition(prev: LatLng, curr: LatLng, alpha = 0.5): LatLng {
   return {
     lat: prev.lat + alpha * (curr.lat - prev.lat),
     lng: prev.lng + alpha * (curr.lng - prev.lng),
   }
 }
 
-// ─── 3. Snap-to-polyline ─────────────────────────────────────────────────────
+// ─── 3. Look-ahead camera center ────────────────────────────────────────────
+
+/**
+ * Shifts the camera center `offsetMeters` ahead of `pos` along `bearingDeg`
+ * so the driver marker appears at the bottom third of the screen instead of
+ * dead-center. 300 m works well at zoom 16 on typical Android screens.
+ */
+export function lookAheadCenter(
+  pos: LatLng,
+  bearingDeg: number,
+  offsetMeters = 300
+): LatLng {
+  const rad    = (bearingDeg * Math.PI) / 180
+  const cosLat = Math.cos((pos.lat * Math.PI) / 180)
+  return {
+    lat: pos.lat + (offsetMeters / 111_320) * Math.cos(rad),
+    lng: pos.lng + (offsetMeters / (111_320 * cosLat)) * Math.sin(rad),
+  }
+}
+
+// ─── 4. Snap-to-polyline ─────────────────────────────────────────────────────
 
 /** Nearest point on line segment A→B to point P (clamped to segment). */
 function closestPointOnSegment(p: LatLng, a: LatLng, b: LatLng): LatLng {
