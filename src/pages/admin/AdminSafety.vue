@@ -34,6 +34,49 @@
       </div>
     </div>
 
+    <section class="card metrics-card">
+      <div class="templates-head">
+        <div>
+          <div class="section-title">Safety SLA Metrics</div>
+          <p class="text-secondary">Operational SLA snapshot for incident handling.</p>
+        </div>
+        <div class="metrics-controls">
+          <select v-model.number="metricsDays" class="input select-input metrics-select">
+            <option :value="7">Last 7 days</option>
+            <option :value="30">Last 30 days</option>
+          </select>
+          <button class="button button-ghost" type="button" :disabled="metricsLoading" @click="loadMetrics(metricsDays)">
+            {{ metricsLoading ? 'Refreshing...' : 'Refresh Metrics' }}
+          </button>
+        </div>
+      </div>
+
+      <p v-if="metricsError" class="text-secondary templates-error">{{ metricsError }}</p>
+      <div v-else-if="metricsLoading && !metrics" class="text-secondary">Loading metrics...</div>
+      <div v-else-if="metrics" class="metrics-grid">
+        <article class="metric-tile">
+          <div class="metric-label">Overdue Open</div>
+          <div class="metric-value">{{ metrics.overdueOpenIncidents }}</div>
+          <div class="metric-foot text-secondary">Open incidents past SLA</div>
+        </article>
+        <article class="metric-tile">
+          <div class="metric-label">Critical Open</div>
+          <div class="metric-value">{{ metrics.criticalOpenIncidents }}</div>
+          <div class="metric-foot text-secondary">Priority CRITICAL & unresolved</div>
+        </article>
+        <article class="metric-tile">
+          <div class="metric-label">Avg Acknowledge</div>
+          <div class="metric-value">{{ formatDuration(metrics.avgAckSeconds) }}</div>
+          <div class="metric-foot text-secondary">{{ metrics.totalIncidents }} incidents in window</div>
+        </article>
+        <article class="metric-tile">
+          <div class="metric-label">Avg Resolve</div>
+          <div class="metric-value">{{ formatDuration(metrics.avgResolveSeconds) }}</div>
+          <div class="metric-foot text-secondary">{{ metrics.openIncidents }} currently open</div>
+        </article>
+      </div>
+    </section>
+
     <section class="card templates-card">
       <div class="templates-head">
         <div>
@@ -248,6 +291,7 @@ import type {
   AdminSafetyDeliveryStatus,
   AdminSafetyIncident,
   AdminSafetyIncidentStatus,
+  AdminSafetyMetricsResponse,
   AdminSafetyTemplate,
   AdminSafetyTemplateKey
 } from '../../services/types'
@@ -268,6 +312,10 @@ const page = ref(1)
 const totalPages = ref(1)
 const total = ref(0)
 const items = ref<AdminSafetyIncident[]>([])
+const metrics = ref<AdminSafetyMetricsResponse | null>(null)
+const metricsLoading = ref(false)
+const metricsError = ref('')
+const metricsDays = ref(7)
 const busy = ref<Record<string, boolean>>({})
 const templatesLoading = ref(false)
 const templatesError = ref('')
@@ -451,6 +499,20 @@ async function loadDeliveryLogs(nextPage = logPage.value) {
   }
 }
 
+async function loadMetrics(days = metricsDays.value) {
+  metricsLoading.value = true
+  metricsError.value = ''
+  try {
+    const res = await api.adminGetSafetyMetrics(days)
+    metrics.value = res
+    metricsDays.value = res.days
+  } catch (err) {
+    metricsError.value = err instanceof Error ? err.message : 'Metrics request failed'
+  } finally {
+    metricsLoading.value = false
+  }
+}
+
 async function retryDelivery(logId: string) {
   logBusyById.value[logId] = true
   logsError.value = ''
@@ -502,6 +564,7 @@ async function withBusy(incidentId: string, action: () => Promise<{ deadLetters?
   try {
     const maybeDelivery = await action()
     await reload(page.value)
+    await loadMetrics(metricsDays.value)
     const deadLetters = typeof (maybeDelivery as { deadLetters?: number } | undefined)?.deadLetters === 'number'
       ? (maybeDelivery as { deadLetters?: number }).deadLetters ?? 0
       : 0
@@ -566,6 +629,7 @@ async function resolveIncident(incidentId: string) {
 
 onMounted(() => {
   reload(1)
+  loadMetrics(7)
   loadTemplates()
   loadDeliveryLogs(1)
 })
@@ -594,6 +658,52 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.metrics-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metrics-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metrics-select {
+  min-width: 140px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-tile {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #475467;
+}
+
+.metric-value {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.metric-foot {
+  margin-top: 6px;
+  font-size: 12px;
 }
 
 .templates-head {
@@ -736,6 +846,15 @@ onMounted(() => {
   .pagination {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .metrics-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .template-actions {

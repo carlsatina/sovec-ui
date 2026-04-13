@@ -35,7 +35,10 @@
         <button class="button button-ghost" type="button" :disabled="loading" @click="resetFilters">Reset</button>
         <button class="button button-ghost" type="button" :disabled="loading" @click="reload(page)">Refresh</button>
         <button class="button button-ghost" type="button" :disabled="loading || items.length === 0" @click="exportCurrentViewCsv">
-          Export CSV
+          Export Page CSV
+        </button>
+        <button class="button button-ghost" type="button" :disabled="loading || exportBusy" @click="exportAllFilteredCsv">
+          {{ exportBusy ? 'Exporting...' : 'Export All Filtered' }}
         </button>
       </div>
       <div class="chip-row">
@@ -144,6 +147,7 @@ const total = ref(0)
 const limit = ref(20)
 const items = ref<AdminAuditLog[]>([])
 const notice = ref<{ kind: 'success' | 'error'; message: string }>({ kind: 'success', message: '' })
+const exportBusy = ref(false)
 let noticeTimer: ReturnType<typeof setTimeout> | null = null
 const actionPresets = [
   'FLEET_CREATE_VEHICLE',
@@ -268,6 +272,40 @@ async function copyLog(item: AdminAuditLog) {
     setNotice('error', 'Clipboard is unavailable in this environment')
   } catch {
     setNotice('error', 'Failed to copy log JSON')
+  }
+}
+
+async function exportAllFilteredCsv() {
+  exportBusy.value = true
+  try {
+    const blob = await api.adminExportAuditLogsCsv({
+      q: q.value || undefined,
+      action: action.value || undefined,
+      targetType: targetType.value || undefined,
+      actorId: actorId.value || undefined,
+      from: fromDate.value || undefined,
+      to: toDate.value || undefined,
+      limit: 5000
+    })
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      setNotice('error', 'CSV export is unavailable in this environment')
+      return
+    }
+    const href = URL.createObjectURL(blob)
+    const filename = `admin-audit-logs-filtered-${new Date().toISOString().slice(0, 10)}.csv`
+    const anchor = document.createElement('a')
+    anchor.href = href
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(href)
+    setNotice('success', `Exported full filtered audit logs to ${filename}`)
+  } catch (err) {
+    setNotice('error', err instanceof Error ? err.message : 'Failed to export filtered audit logs')
+  } finally {
+    exportBusy.value = false
   }
 }
 

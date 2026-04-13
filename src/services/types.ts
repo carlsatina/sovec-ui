@@ -509,6 +509,26 @@ export type AdminSafetyIncidentsResponse = {
   totalPages: number
 }
 
+export type AdminSafetyMetricsResponse = {
+  days: number
+  windowStart: string
+  windowEnd: string
+  totalIncidents: number
+  openIncidents: number
+  criticalOpenIncidents: number
+  overdueOpenIncidents: number
+  avgAckSeconds: number | null
+  avgResolveSeconds: number | null
+  byPriority: Array<{
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+    total: number
+    open: number
+    overdue: number
+    avgAckSeconds: number | null
+    avgResolveSeconds: number | null
+  }>
+}
+
 export type AdminSafetyTemplateKey = 'ESCALATION_ADMIN' | 'ESCALATION_REPORTER' | 'RESOLUTION_REPORTER'
 
 export type AdminSafetyTemplate = {

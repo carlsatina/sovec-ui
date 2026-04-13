@@ -15,7 +15,7 @@ function hasHeader(headers: Record<string, string>, name: string) {
   return Object.keys(headers).some((key) => key.toLowerCase() === target)
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+function createRequestContext(path: string, options: RequestOptions = {}) {
   const token = localStorage.getItem('auth_token')
   const devRole = localStorage.getItem('solvec_dev_role')
   const headers: Record<string, string> = {
@@ -32,6 +32,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   const url = `${API_URL}${path}`
   const method = options.method ?? 'GET'
+  return { headers, url, method }
+}
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { headers, url, method } = createRequestContext(path, options)
 
   // On native Android/iOS, use CapacitorHttp so requests go through the
   // native HTTP stack — bypassing the WebView's mixed-content restriction.
@@ -64,4 +69,37 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   return res.json() as Promise<T>
+}
+
+export async function requestText(path: string, options: RequestOptions = {}): Promise<string> {
+  const { headers, url, method } = createRequestContext(path, options)
+
+  if (Capacitor.isNativePlatform()) {
+    const res = await CapacitorHttp.request({
+      method,
+      url,
+      headers,
+      data: options.body ?? undefined
+    })
+
+    if (res.status < 200 || res.status >= 300) {
+      const message = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+      throw new Error(message || 'Request failed')
+    }
+
+    return typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  })
+
+  if (!res.ok) {
+    const message = await res.text()
+    throw new Error(message || 'Request failed')
+  }
+
+  return res.text()
 }

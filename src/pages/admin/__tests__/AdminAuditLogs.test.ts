@@ -9,11 +9,13 @@ vi.mock('vue-router', () => ({
 
 vi.mock('../../../services/api', () => ({
   api: {
-    adminGetAuditLogs: vi.fn()
+    adminGetAuditLogs: vi.fn(),
+    adminExportAuditLogsCsv: vi.fn()
   }
 }))
 
 const mockAdminGetAuditLogs = vi.mocked(api.adminGetAuditLogs)
+const mockAdminExportAuditLogsCsv = vi.mocked(api.adminExportAuditLogsCsv)
 
 function mountPage() {
   return mount(AdminAuditLogs, {
@@ -37,6 +39,7 @@ describe('AdminAuditLogs', () => {
       total: 0,
       totalPages: 1
     })
+    mockAdminExportAuditLogsCsv.mockResolvedValue(new Blob(['id'], { type: 'text/csv;charset=utf-8' }))
   })
 
   it('shows loading state while logs are being fetched', async () => {
@@ -139,10 +142,37 @@ describe('AdminAuditLogs', () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    const exportBtn = wrapper.findAll('button').find((btn) => btn.text() === 'Export CSV')
+    const exportBtn = wrapper.findAll('button').find((btn) => btn.text() === 'Export Page CSV')
     expect(exportBtn).toBeDefined()
     await exportBtn!.trigger('click')
 
+    expect(createObjectURL).toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalled()
+    clickSpy.mockRestore()
+  })
+
+  it('exports all filtered logs via API csv endpoint', async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const createObjectURL = vi.fn(() => 'blob://csv-test')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: createObjectURL,
+      configurable: true
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      value: revokeObjectURL,
+      configurable: true
+    })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const allBtn = wrapper.findAll('button').find((btn) => btn.text() === 'Export All Filtered')
+    expect(allBtn).toBeDefined()
+    await allBtn!.trigger('click')
+    await flushPromises()
+
+    expect(mockAdminExportAuditLogsCsv).toHaveBeenCalled()
     expect(createObjectURL).toHaveBeenCalled()
     expect(clickSpy).toHaveBeenCalled()
     clickSpy.mockRestore()

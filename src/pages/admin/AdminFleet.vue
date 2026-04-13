@@ -161,6 +161,14 @@
       >
         <div id="confirm-assign-title" class="section-title">Confirm Driver Assignment</div>
         <p class="text-secondary">{{ confirmAssign.risk }}</p>
+        <textarea
+          v-if="confirmAssign.requireReason"
+          v-model.trim="confirmAssign.reason"
+          class="input"
+          rows="3"
+          placeholder="Override reason (required)"
+        />
+        <p v-if="confirmAssignError" class="modal-error">{{ confirmAssignError }}</p>
         <p class="text-secondary">Do you want to apply assignment anyway?</p>
         <div class="modal-actions">
           <button class="button button-ghost" type="button" @click="confirmAssign = null">Cancel</button>
@@ -197,13 +205,20 @@ const availableDrivers = ref<AdminAvailableDriver[]>([])
 const driverDirectory = ref<AdminAvailableDriver[]>([])
 const loadingDrivers = ref(false)
 const driverQuery = ref('')
-const confirmAssign = ref<{ vehicleId: string; risk: string } | null>(null)
+const confirmAssign = ref<{ vehicleId: string; risk: string; requireReason: boolean; reason: string } | null>(null)
+const confirmAssignError = ref('')
 const historyOpen = ref<Record<string, boolean>>({})
 const historyLoading = ref<Record<string, boolean>>({})
 const historyError = ref<Record<string, string>>({})
 const historyByVehicle = ref<Record<string, AdminVehicleHistoryItem[]>>({})
 const modalCardRef = ref<HTMLElement | null>(null)
 let previousFocus: HTMLElement | null = null
+
+type DriverRisk = {
+  message: string
+  canOverride: boolean
+  requireReason: boolean
+}
 
 const newVehicle = ref({
   plateNumber: '',
@@ -258,18 +273,31 @@ function assignmentLabel(vehicleId: string) {
 }
 
 function driverRisk(vehicleId: string) {
+  const flags = driverRiskFlags(vehicleId)
+  return flags.map((flag) => flag.message).join(' · ')
+}
+
+function driverRiskFlags(vehicleId: string): DriverRisk[] {
   const details = resolvedDriverByVehicle.value[vehicleId]
-  if (!details) return ''
+  if (!details) return []
 
   const vehicle = items.value.find((item) => item.id === vehicleId)
-  const flags: string[] = []
+  const flags: DriverRisk[] = []
   if (!details.driverLocation?.isAvailable) {
-    flags.push('Driver is currently unavailable/offline')
+    flags.push({
+      message: 'Driver is currently unavailable/offline',
+      canOverride: true,
+      requireReason: true
+    })
   }
   if (details.vehicle && vehicle && details.vehicle.id !== vehicle.id) {
-    flags.push(`Driver is assigned to ${details.vehicle.plateNumber}`)
+    flags.push({
+      message: `Driver is assigned to ${details.vehicle.plateNumber}`,
+      canOverride: false,
+      requireReason: false
+    })
   }
-  return flags.join(' · ')
+  return flags
 }
 
 function statusOptions(currentStatus: VehicleStatus) {
@@ -415,21 +443,33 @@ async function createVehicle() {
 }
 
 async function assignDriver(vehicleId: string) {
-  const risk = driverRisk(vehicleId)
-  if (risk) {
-    confirmAssign.value = { vehicleId, risk }
+  const riskFlags = driverRiskFlags(vehicleId)
+  const blocking = riskFlags.find((flag) => !flag.canOverride)
+  if (blocking) {
+    error.value = `${blocking.message}. Unassign the driver from the current vehicle first.`
     return
   }
 
-  await applyDriverAssignment(vehicleId)
+  if (riskFlags.length > 0) {
+    confirmAssign.value = {
+      vehicleId,
+      risk: riskFlags.map((flag) => flag.message).join(' · '),
+      requireReason: riskFlags.some((flag) => flag.requireReason),
+      reason: ''
+    }
+    confirmAssignError.value = ''
+    return
+  }
+
+  await applyDriverAssignment(vehicleId, {})
 }
 
-async function applyDriverAssignment(vehicleId: string) {
+async function applyDriverAssignment(vehicleId: string, options: { force?: boolean; reason?: string }) {
   busy.value[vehicleId] = true
   error.value = ''
   try {
     const value = driverByVehicle.value[vehicleId]?.trim()
-    await api.adminAssignVehicleDriver(vehicleId, value ? value : null)
+    await api.adminAssignVehicleDriver(vehicleId, value ? value : null, options)
     await reload(page.value)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Request failed'
@@ -441,8 +481,16 @@ async function applyDriverAssignment(vehicleId: string) {
 async function confirmAndAssign() {
   const pending = confirmAssign.value
   if (!pending) return
+  if (pending.requireReason && !pending.reason.trim()) {
+    confirmAssignError.value = 'Override reason is required for offline/unavailable drivers.'
+    return
+  }
   confirmAssign.value = null
-  await applyDriverAssignment(pending.vehicleId)
+  confirmAssignError.value = ''
+  await applyDriverAssignment(pending.vehicleId, {
+    force: pending.requireReason,
+    reason: pending.requireReason ? pending.reason.trim() : undefined
+  })
 }
 
 function onGlobalKeydown(event: KeyboardEvent) {
@@ -453,6 +501,7 @@ function onGlobalKeydown(event: KeyboardEvent) {
 
 watch(confirmAssign, async (value) => {
   if (value) {
+    confirmAssignError.value = ''
     previousFocus = (document.activeElement as HTMLElement | null) ?? null
     await nextTick()
     modalCardRef.value?.focus()
@@ -632,6 +681,11 @@ onUnmounted(() => {
 .modal-actions > * {
   flex: 1;
   min-width: 120px;
+}
+
+.modal-error {
+  color: #b42318;
+  font-size: 13px;
 }
 
 .vehicle-head {

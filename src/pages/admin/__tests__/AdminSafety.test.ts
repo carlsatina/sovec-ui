@@ -10,12 +10,14 @@ vi.mock('vue-router', () => ({
 vi.mock('../../../services/api', () => ({
   api: {
     adminGetSafetyIncidents: vi.fn(),
+    adminGetSafetyMetrics: vi.fn(),
     adminGetSafetyTemplates: vi.fn(),
     adminGetSafetyDeliveryLogs: vi.fn()
   }
 }))
 
 const mockAdminGetSafetyIncidents = vi.mocked(api.adminGetSafetyIncidents)
+const mockAdminGetSafetyMetrics = vi.mocked(api.adminGetSafetyMetrics)
 const mockAdminGetSafetyTemplates = vi.mocked(api.adminGetSafetyTemplates)
 const mockAdminGetSafetyDeliveryLogs = vi.mocked(api.adminGetSafetyDeliveryLogs)
 
@@ -35,6 +37,23 @@ describe('AdminSafety', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAdminGetSafetyTemplates.mockResolvedValue({ items: [] })
+    mockAdminGetSafetyMetrics.mockResolvedValue({
+      days: 7,
+      windowStart: new Date().toISOString(),
+      windowEnd: new Date().toISOString(),
+      totalIncidents: 0,
+      openIncidents: 0,
+      criticalOpenIncidents: 0,
+      overdueOpenIncidents: 0,
+      avgAckSeconds: null,
+      avgResolveSeconds: null,
+      byPriority: [
+        { priority: 'LOW', total: 0, open: 0, overdue: 0, avgAckSeconds: null, avgResolveSeconds: null },
+        { priority: 'MEDIUM', total: 0, open: 0, overdue: 0, avgAckSeconds: null, avgResolveSeconds: null },
+        { priority: 'HIGH', total: 0, open: 0, overdue: 0, avgAckSeconds: null, avgResolveSeconds: null },
+        { priority: 'CRITICAL', total: 0, open: 0, overdue: 0, avgAckSeconds: null, avgResolveSeconds: null }
+      ]
+    })
     mockAdminGetSafetyDeliveryLogs.mockResolvedValue({
       items: [],
       page: 1,
@@ -75,5 +94,41 @@ describe('AdminSafety', () => {
 
     expect(wrapper.text()).toContain('Safety request failed')
     expect(wrapper.text()).toContain('safety fetch failed')
+  })
+
+  it('renders safety metrics cards', async () => {
+    mockAdminGetSafetyIncidents.mockResolvedValue({
+      items: [],
+      page: 1,
+      limit: 12,
+      total: 0,
+      totalPages: 1
+    })
+    mockAdminGetSafetyMetrics.mockResolvedValue({
+      days: 7,
+      windowStart: new Date().toISOString(),
+      windowEnd: new Date().toISOString(),
+      totalIncidents: 12,
+      openIncidents: 4,
+      criticalOpenIncidents: 2,
+      overdueOpenIncidents: 1,
+      avgAckSeconds: 180,
+      avgResolveSeconds: 1200,
+      byPriority: [
+        { priority: 'LOW', total: 1, open: 0, overdue: 0, avgAckSeconds: 90, avgResolveSeconds: 800 },
+        { priority: 'MEDIUM', total: 3, open: 1, overdue: 0, avgAckSeconds: 120, avgResolveSeconds: 900 },
+        { priority: 'HIGH', total: 6, open: 2, overdue: 1, avgAckSeconds: 180, avgResolveSeconds: 1200 },
+        { priority: 'CRITICAL', total: 2, open: 1, overdue: 0, avgAckSeconds: 60, avgResolveSeconds: 500 }
+      ]
+    })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Safety SLA Metrics')
+    expect(wrapper.text()).toContain('Overdue Open')
+    expect(wrapper.text()).toContain('Critical Open')
+    expect(wrapper.text()).toContain('1')
+    expect(wrapper.text()).toContain('2')
   })
 })

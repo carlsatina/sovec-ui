@@ -1,4 +1,4 @@
-import { request } from './http'
+import { request, requestText } from './http'
 import type {
   AuthOtpSendRequest,
   AuthOtpVerifyRequest,
@@ -43,6 +43,7 @@ import type {
   AdminAnalyticsTrendsResponse,
   AdminSafetyIncidentStatus,
   AdminSafetyIncidentsResponse,
+  AdminSafetyMetricsResponse,
   AdminSafetyTemplateKey,
   AdminSafetyTemplatesResponse,
   AdminSafetyDeliveryLogsResponse,
@@ -175,8 +176,19 @@ export const api = {
     batteryLevel?: number
     driverId?: string
   }) => request<{ ok: boolean; vehicle: unknown }>('/admin/vehicles', { method: 'POST', body: payload }),
-  adminAssignVehicleDriver: (vehicleId: string, driverId?: string | null) =>
-    request<{ ok: boolean; vehicle: unknown }>(`/admin/vehicles/${vehicleId}/assign-driver`, { method: 'POST', body: { driverId: driverId ?? null } }),
+  adminAssignVehicleDriver: (
+    vehicleId: string,
+    driverId?: string | null,
+    options: { force?: boolean; reason?: string } = {}
+  ) =>
+    request<{ ok: boolean; vehicle: unknown }>(`/admin/vehicles/${vehicleId}/assign-driver`, {
+      method: 'POST',
+      body: {
+        driverId: driverId ?? null,
+        ...(options.force ? { force: true } : {}),
+        ...(options.reason ? { reason: options.reason } : {})
+      }
+    }),
   adminUpdateVehicleStatus: (vehicleId: string, status: VehicleStatus, batteryLevel?: number) =>
     request<{ ok: boolean; vehicle: unknown }>(`/admin/vehicles/${vehicleId}/status`, {
       method: 'POST',
@@ -241,6 +253,30 @@ export const api = {
     query.set('limit', String(params.limit ?? 20))
     return request<AdminAuditLogsResponse>(`/admin/audit-logs?${query.toString()}`)
   },
+  adminExportAuditLogsCsv: async (params: {
+    actorId?: string
+    action?: string
+    targetType?: string
+    q?: string
+    from?: string
+    to?: string
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.actorId) query.set('actorId', params.actorId)
+    if (params.action) query.set('action', params.action)
+    if (params.targetType) query.set('targetType', params.targetType)
+    if (params.q) query.set('q', params.q)
+    if (params.from) query.set('from', params.from)
+    if (params.to) query.set('to', params.to)
+    query.set('limit', String(params.limit ?? 5000))
+
+    const csv = await requestText(`/admin/audit-logs/export.csv?${query.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'text/csv' }
+    })
+    return new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  },
   adminGetAnalyticsOverview: () =>
     request<AdminAnalyticsOverview>('/admin/analytics/overview'),
   adminGetAnalyticsTrends: (days = 7) =>
@@ -266,6 +302,8 @@ export const api = {
     query.set('limit', String(params.limit ?? 20))
     return request<AdminSafetyIncidentsResponse>(`/admin/safety/incidents?${query.toString()}`)
   },
+  adminGetSafetyMetrics: (days = 7) =>
+    request<AdminSafetyMetricsResponse>(`/admin/safety/metrics?days=${encodeURIComponent(String(days))}`),
   adminAcknowledgeSafetyIncident: (incidentId: string, note?: string) =>
     request<{ ok: boolean; incident: unknown }>(`/admin/safety/incidents/${incidentId}/acknowledge`, { method: 'POST', body: { note } }),
   adminAssignSafetyIncident: (incidentId: string, payload: { assigneeId?: string; note?: string } = {}) =>
