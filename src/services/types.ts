@@ -430,6 +430,32 @@ export type AdminAuditLogsResponse = {
   totalPages: number
 }
 
+export type AdminAuditDeadLetter = {
+  id: string
+  capturedAt: string
+  adminId: string
+  action: string
+  targetType: string
+  targetId?: string | null
+  summary?: string | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+  error: string
+  replayState?: 'REPLAYED' | 'FAILED' | null
+  lastAttemptAt?: string | null
+  lastError?: string | null
+}
+
+export type AdminAuditDeadLettersResponse = {
+  path: string
+  items: AdminAuditDeadLetter[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
 export type AdminAnalyticsOverview = {
   today: {
     rides: number

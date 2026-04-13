@@ -59,6 +59,58 @@
       {{ notice.message }}
     </div>
 
+    <div class="card dead-letter-card">
+      <div class="log-head">
+        <div>
+          <div class="section-title">Audit Dead-Letter Queue</div>
+          <p class="text-secondary">Fallback records when DB audit insert fails.</p>
+        </div>
+        <button class="button button-ghost tiny-button" type="button" :disabled="deadLoading" @click="loadDeadLetters(1)">
+          {{ deadLoading ? 'Refreshing...' : 'Refresh' }}
+        </button>
+      </div>
+      <div class="filter-row">
+        <input v-model.trim="deadQ" class="input" placeholder="Search dead letters" />
+        <input v-model.trim="deadAction" class="input" placeholder="Action (optional)" />
+        <button class="button button-primary" type="button" :disabled="deadLoading" @click="loadDeadLetters(1)">
+          Apply
+        </button>
+      </div>
+      <p v-if="deadPath" class="text-secondary">Path: {{ deadPath }}</p>
+      <p v-if="deadError" class="text-secondary">{{ deadError }}</p>
+      <p v-else-if="deadLoading" class="text-secondary">Loading dead letters...</p>
+      <p v-else-if="deadItems.length === 0" class="text-secondary">No dead-letter entries.</p>
+      <ul v-else class="history-list dead-list">
+        <li v-for="item in deadItems" :key="item.id" class="history-item">
+          <div class="history-head">
+            <strong>{{ item.action }}</strong>
+            <span>{{ formatDate(item.capturedAt) }}</span>
+          </div>
+          <div class="head-chips">
+            <span v-if="item.replayState === 'REPLAYED'" class="chip chip-ok">Replayed</span>
+            <span v-else-if="item.replayState === 'FAILED'" class="chip chip-bad">Replay Failed</span>
+            <span v-else class="chip chip-info">Pending</span>
+            <button class="button button-ghost tiny-button" type="button" :disabled="deadBusy[item.id]" @click="replayDeadLetter(item.id)">
+              {{ deadBusy[item.id] ? 'Replaying...' : 'Replay' }}
+            </button>
+          </div>
+          <div class="text-secondary"><strong>Target:</strong> {{ item.targetType }} · {{ item.targetId || 'N/A' }}</div>
+          <div class="text-secondary"><strong>Error:</strong> {{ item.error }}</div>
+          <div v-if="item.lastAttemptAt" class="text-secondary"><strong>Last Attempt:</strong> {{ formatDate(item.lastAttemptAt) }}</div>
+          <div v-if="item.lastError" class="text-secondary"><strong>Last Replay Error:</strong> {{ item.lastError }}</div>
+        </li>
+      </ul>
+      <div class="pagination dead-pagination">
+        <button class="button button-ghost" type="button" :disabled="deadLoading || deadPage <= 1" @click="loadDeadLetters(deadPage - 1)">
+          Previous
+        </button>
+        <div class="text-secondary">Page {{ deadPage }} of {{ deadTotalPages }} · {{ deadTotal }} total</div>
+        <button class="button button-ghost" type="button" :disabled="deadLoading || deadPage >= deadTotalPages" @click="loadDeadLetters(deadPage + 1)">
+          Next
+        </button>
+      </div>
+    </div>
+
     <div v-if="error" class="card">
       <div class="section-title">Audit log request failed</div>
       <p class="text-secondary">{{ error }}</p>
@@ -129,7 +181,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../../components/AppHeader.vue'
 import { api } from '../../services/api'
-import type { AdminAuditLog } from '../../services/types'
+import type { AdminAuditDeadLetter, AdminAuditLog } from '../../services/types'
 
 const router = useRouter()
 
@@ -148,6 +200,16 @@ const limit = ref(20)
 const items = ref<AdminAuditLog[]>([])
 const notice = ref<{ kind: 'success' | 'error'; message: string }>({ kind: 'success', message: '' })
 const exportBusy = ref(false)
+const deadLoading = ref(false)
+const deadError = ref('')
+const deadPath = ref('')
+const deadQ = ref('')
+const deadAction = ref('')
+const deadPage = ref(1)
+const deadTotalPages = ref(1)
+const deadTotal = ref(0)
+const deadItems = ref<AdminAuditDeadLetter[]>([])
+const deadBusy = ref<Record<string, boolean>>({})
 let noticeTimer: ReturnType<typeof setTimeout> | null = null
 const actionPresets = [
   'FLEET_CREATE_VEHICLE',
@@ -206,6 +268,46 @@ async function reload(nextPage = page.value) {
     error.value = err instanceof Error ? err.message : 'Request failed'
   } finally {
     loading.value = false
+  }
+}
+
+async function loadDeadLetters(nextPage = deadPage.value) {
+  deadLoading.value = true
+  deadError.value = ''
+  try {
+    const res = await api.adminGetAuditDeadLetters({
+      q: deadQ.value || undefined,
+      action: deadAction.value || undefined,
+      page: nextPage,
+      limit: 10
+    })
+    deadPath.value = res.path
+    deadItems.value = res.items
+    deadPage.value = res.page
+    deadTotalPages.value = res.totalPages
+    deadTotal.value = res.total
+  } catch (err) {
+    deadError.value = err instanceof Error ? err.message : 'Dead-letter request failed'
+  } finally {
+    deadLoading.value = false
+  }
+}
+
+async function replayDeadLetter(id: string) {
+  deadBusy.value[id] = true
+  try {
+    const res = await api.adminReplayAuditDeadLetter(id)
+    if (res.replayed) {
+      setNotice('success', 'Dead-letter audit replayed successfully')
+    } else {
+      setNotice('success', 'Dead-letter was already replayed')
+    }
+    await loadDeadLetters(deadPage.value)
+  } catch (err) {
+    setNotice('error', err instanceof Error ? err.message : 'Replay failed')
+    await loadDeadLetters(deadPage.value)
+  } finally {
+    deadBusy.value[id] = false
   }
 }
 
@@ -321,6 +423,7 @@ function resetFilters() {
 
 onMounted(() => {
   reload(1)
+  loadDeadLetters(1)
 })
 
 onUnmounted(() => {
@@ -453,6 +556,21 @@ onUnmounted(() => {
   border-color: #9f1239;
   background: #fff1f2;
   color: #881337;
+}
+
+.dead-letter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dead-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.dead-pagination {
+  margin-top: 4px;
 }
 
 @media (max-width: 720px) {

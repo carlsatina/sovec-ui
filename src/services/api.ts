@@ -39,6 +39,7 @@ import type {
   AdminSupportTicketStatus,
   AdminSupportTicketsResponse,
   AdminAuditLogsResponse,
+  AdminAuditDeadLettersResponse,
   AdminAnalyticsOverview,
   AdminAnalyticsTrendsResponse,
   AdminSafetyIncidentStatus,
@@ -253,6 +254,23 @@ export const api = {
     query.set('limit', String(params.limit ?? 20))
     return request<AdminAuditLogsResponse>(`/admin/audit-logs?${query.toString()}`)
   },
+  adminGetAuditDeadLetters: (params: {
+    q?: string
+    action?: string
+    targetType?: string
+    page?: number
+    limit?: number
+  } = {}) => {
+    const query = new URLSearchParams()
+    if (params.q) query.set('q', params.q)
+    if (params.action) query.set('action', params.action)
+    if (params.targetType) query.set('targetType', params.targetType)
+    query.set('page', String(params.page ?? 1))
+    query.set('limit', String(params.limit ?? 20))
+    return request<AdminAuditDeadLettersResponse>(`/admin/audit-logs/dead-letters?${query.toString()}`)
+  },
+  adminReplayAuditDeadLetter: (id: string) =>
+    request<{ ok: boolean; replayed: boolean; reason?: string }>(`/admin/audit-logs/dead-letters/${encodeURIComponent(id)}/replay`, { method: 'POST' }),
   adminExportAuditLogsCsv: async (params: {
     actorId?: string
     action?: string

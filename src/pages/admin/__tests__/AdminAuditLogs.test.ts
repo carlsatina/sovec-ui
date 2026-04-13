@@ -10,11 +10,15 @@ vi.mock('vue-router', () => ({
 vi.mock('../../../services/api', () => ({
   api: {
     adminGetAuditLogs: vi.fn(),
+    adminGetAuditDeadLetters: vi.fn(),
+    adminReplayAuditDeadLetter: vi.fn(),
     adminExportAuditLogsCsv: vi.fn()
   }
 }))
 
 const mockAdminGetAuditLogs = vi.mocked(api.adminGetAuditLogs)
+const mockAdminGetAuditDeadLetters = vi.mocked(api.adminGetAuditDeadLetters)
+const mockAdminReplayAuditDeadLetter = vi.mocked(api.adminReplayAuditDeadLetter)
 const mockAdminExportAuditLogsCsv = vi.mocked(api.adminExportAuditLogsCsv)
 
 function mountPage() {
@@ -39,6 +43,15 @@ describe('AdminAuditLogs', () => {
       total: 0,
       totalPages: 1
     })
+    mockAdminGetAuditDeadLetters.mockResolvedValue({
+      path: '/tmp/eride-admin-audit-dead-letter.ndjson',
+      items: [],
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 1
+    })
+    mockAdminReplayAuditDeadLetter.mockResolvedValue({ ok: true, replayed: true })
     mockAdminExportAuditLogsCsv.mockResolvedValue(new Blob(['id'], { type: 'text/csv;charset=utf-8' }))
   })
 
