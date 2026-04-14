@@ -48,6 +48,16 @@ const props = withDefaults(
 
 const isNative = computed(() => Capacitor.isNativePlatform())
 
+// Suppress cameraIdle events during programmatic follow-mode animations to prevent
+// the auto-unfollow check from firing on our own camera moves (e.g. when the map
+// animates from the initial fallback position to the driver's actual GPS location).
+let suppressIdleUntil = 0
+const FOLLOW_ANIM_MS = 400  // animationDuration(300) + small buffer
+
+function suppressIdle() {
+  suppressIdleUntil = Date.now() + FOLLOW_ANIM_MS
+}
+
 // --- Native (Capacitor) ---
 const mapRef = shallowRef<HTMLElement>()
 const map = shallowRef<GoogleMap>()
@@ -80,6 +90,7 @@ async function createMap() {
       await map.value.disableTouch()
     }
     await map.value.setOnCameraIdleListener((data) => {
+      if (Date.now() < suppressIdleUntil) return
       emit('cameraIdle', { lat: data.latitude, lng: data.longitude })
     })
     await map.value.setOnMarkerDragEndListener((data) => {
@@ -142,6 +153,7 @@ async function moveCameraToData() {
 
   // Navigation mode: track driver position with heading and tilt
   if (props.followDriver) {
+    suppressIdle()
     await map.value.setCamera({
       coordinate: props.center,
       zoom: props.zoom,
@@ -224,6 +236,7 @@ async function createWebMap() {
     })
     syncWebOverlays()
     webMap.value.addListener('idle', () => {
+      if (Date.now() < suppressIdleUntil) return
       const center = webMap.value.getCenter()
       if (center) emit('cameraIdle', { lat: center.lat(), lng: center.lng() })
     })
@@ -295,6 +308,7 @@ function updateWebCamera() {
 
   // Navigation mode: track driver with heading and tilt
   if (props.followDriver) {
+    suppressIdle()
     webMap.value.panTo(props.center)
     webMap.value.setZoom(props.zoom)
     webMap.value.setHeading(props.mapBearing)

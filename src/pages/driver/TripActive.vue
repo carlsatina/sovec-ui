@@ -5,7 +5,7 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="16"
+        :zoom="18"
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
@@ -193,7 +193,7 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   const driverPos = driver.driverLocation
   if (!driverPos) return
   // Compare against the expected look-ahead center, not the raw driver position
-  const expected = lookAheadCenter(driverPos, driverBearing.value)
+  const expected = lookAheadCenter(driverPos, driverBearing.value, 100)
   const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
@@ -220,7 +220,7 @@ function checkArrival() {
 const mapCenter = computed(() => {
   const pos = driver.driverLocation
   if (!pos) return driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 }
-  return lookAheadCenter(pos, driverBearing.value)
+  return lookAheadCenter(pos, driverBearing.value, 100)
 })
 
 const mapMarkers = computed(() => {

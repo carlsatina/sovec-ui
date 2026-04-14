@@ -5,12 +5,12 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="16"
+        :zoom="18"
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
-        :map-bearing="0"
-        :tilt="0"
+        :map-bearing="driverBearing"
+        :tilt="30"
         map-id="trip-progress-map"
         @camera-idle="onCameraIdle"
       />
@@ -71,16 +71,6 @@
         </div>
       </div>
 
-      <button class="share-btn" type="button">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Share trip status
-      </button>
-
-      <!-- Task 7: Fare-may-vary notice -->
-      <p class="fare-notice">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Final fare may vary based on actual route and distance.
-      </p>
     </section>
   </div>
 </template>
@@ -95,7 +85,7 @@ import { api } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
-import { snapToPolyline } from '../../utils/gpsSmoothing'
+import { snapToPolyline, lookAheadCenter } from '../../utils/gpsSmoothing'
 
 const router = useRouter()
 const booking = useBookingStore()
@@ -126,14 +116,16 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
   const driverPos = booking.driverLocation
   if (!driverPos) return
-  const dist = Math.hypot(coords.lat - driverPos.lat, coords.lng - driverPos.lng)
+  const expected = lookAheadCenter(driverPos, driverBearing.value, 100)
+  const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
 
-const mapCenter = computed(() =>
-  booking.driverLocation
-  ?? (booking.dropoff ? { lat: booking.dropoff.lat, lng: booking.dropoff.lng } : { lat: 14.5995, lng: 120.9842 })
-)
+const mapCenter = computed(() => {
+  const pos = booking.driverLocation
+  if (!pos) return booking.dropoff ? { lat: booking.dropoff.lat, lng: booking.dropoff.lng } : { lat: 14.5995, lng: 120.9842 }
+  return lookAheadCenter(pos, driverBearing.value, 100)
+})
 
 const mapMarkers = computed(() => {
   const markers: Array<{
@@ -328,12 +320,12 @@ onUnmounted(() => {
 
 .sheet {
   background: #f1f5f8;
-  border-radius: 28px 28px 0 0;
-  margin-top: -28px;
-  padding: 6px 12px 24px;
+  border-radius: 24px 24px 0 0;
+  margin-top: -24px;
+  padding: 4px 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   box-shadow: 0 -8px 32px rgba(0,0,0,0.1);
 }
 
@@ -349,11 +341,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  border-radius: 14px;
+  padding: 7px 12px;
+  border-radius: 12px;
   background: rgba(96,180,90,0.08);
   border: 1px solid rgba(96,180,90,0.2);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #3D7A38;
 }
@@ -381,8 +373,8 @@ onUnmounted(() => {
 .info-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 8px 12px;
 }
 .d-avatar {
   width: 38px;
@@ -415,31 +407,15 @@ onUnmounted(() => {
 .card-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 0 14px; }
 .addr-row {
   display: grid;
-  grid-template-columns: 20px minmax(0,1fr);
-  gap: 10px;
+  grid-template-columns: 18px minmax(0,1fr);
+  gap: 8px;
   align-items: center;
-  padding: 10px 14px;
+  padding: 7px 12px;
 }
 .addr-dot { width: 11px; height: 11px; flex-shrink: 0; }
 .dot-gold { background: #f5a623; border-radius: 3px; box-shadow: 0 0 0 3px rgba(245,166,35,0.2); }
 .addr-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .addr-sub   { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.share-btn {
-  height: 48px;
-  border-radius: 14px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
 
 /* Task 5: progress bar */
 .progress-bar-wrap {
@@ -468,15 +444,4 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-/* Task 7: fare-may-vary notice */
-.fare-notice {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #9ca3af;
-  margin: 0;
-  padding: 0 2px;
-}
-.fare-notice svg { flex-shrink: 0; opacity: 0.7; }
 </style>

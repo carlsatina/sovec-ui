@@ -4,7 +4,7 @@
     <div class="map-area">
       <NativeMap
         :center="mapCenter"
-        :zoom="16"
+        :zoom="18"
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
@@ -116,7 +116,7 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
   const driverPos = driver.driverLocation
   if (!driverPos) return
-  const expected = lookAheadCenter(driverPos, driverBearing.value)
+  const expected = lookAheadCenter(driverPos, driverBearing.value, 100)
   const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
