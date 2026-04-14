@@ -294,7 +294,7 @@ onUnmounted(() => {
   border-radius: 50%;
   border: none;
   background: #fff;
-  color: #00c4bc;
+  color: #60B45A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,12 +312,12 @@ onUnmounted(() => {
   transform: translateX(-50%);
   background: rgba(7,21,36,0.8);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(0,196,188,0.25);
+  border: 1px solid rgba(96,180,90,0.25);
   border-radius: 999px;
   padding: 8px 16px;
   font-size: 12px;
   font-weight: 700;
-  color: #00c4bc;
+  color: #60B45A;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -351,18 +351,18 @@ onUnmounted(() => {
   gap: 8px;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(0,196,188,0.08);
-  border: 1px solid rgba(0,196,188,0.2);
+  background: rgba(96,180,90,0.08);
+  border: 1px solid rgba(96,180,90,0.2);
   font-size: 13px;
   font-weight: 700;
-  color: #007d78;
+  color: #3D7A38;
 }
 
 .status-dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #00c4bc;
+  background: #60B45A;
   flex-shrink: 0;
   animation: blink 1.4s ease-in-out infinite;
 }
@@ -388,8 +388,8 @@ onUnmounted(() => {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(0,196,188,0.15);
-  border: 1.5px solid rgba(0,196,188,0.25);
+  background: rgba(96,180,90,0.15);
+  border: 1.5px solid rgba(96,180,90,0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -402,9 +402,9 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: rgba(0,196,188,0.15);
-  border: 1px solid rgba(0,196,188,0.25);
-  color: #00c4bc;
+  background: rgba(96,180,90,0.15);
+  border: 1px solid rgba(96,180,90,0.25);
+  color: #60B45A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -451,19 +451,19 @@ onUnmounted(() => {
   flex: 1;
   height: 6px;
   border-radius: 999px;
-  background: rgba(0,196,188,0.15);
+  background: rgba(96,180,90,0.15);
   overflow: hidden;
 }
 .progress-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #00c4bc, #00e5dc);
+  background: linear-gradient(90deg, #60B45A, #3D7A38);
   transition: width 1.2s ease;
 }
 .progress-label {
   font-size: 11px;
   font-weight: 600;
-  color: #007d78;
+  color: #3D7A38;
   white-space: nowrap;
   flex-shrink: 0;
 }

@@ -13,6 +13,8 @@ export const useDriverStore = defineStore('driver', () => {
   const rideStatus = ref<'idle' | 'incoming' | 'arriving' | 'in_progress'>('idle')
   const arrivedAtPickup = ref(false)
   const driverLocation = ref<{ lat: number; lng: number } | null>(null)
+  // Preserved after trip completion so DriverTripCompleted page can show summary
+  const lastCompletedRide = ref<RideDetails | null>(null)
 
   // watchPosition handles — null when not tracking
   let locationWatchId: number | null = null         // high-accuracy GPS watch
@@ -234,6 +236,7 @@ export const useDriverStore = defineStore('driver', () => {
     loading.value = true
     try {
       await api.rideUpdateStatus(currentRide.value.id, 'COMPLETED', driverId)
+      lastCompletedRide.value = currentRide.value   // preserve for summary screen
       currentRide.value = null
       rideStatus.value = 'idle'
       arrivedAtPickup.value = false
@@ -246,9 +249,16 @@ export const useDriverStore = defineStore('driver', () => {
 
   function subscribeToRideEvents(driverId: string) {
     const socket = getSocket()
-    socket.emit('join', { userId: driverId })
 
-    // Re-join user room on socket reconnect (mobile network drops/resumes)
+    // Only emit join immediately if the socket is already connected.
+    // On a fresh login the socket is still connecting — emitting now would be
+    // silently dropped. The connect handler below covers that initial connection
+    // as well as all future reconnects (e.g. mobile network drops).
+    if (socket.connected) {
+      socket.emit('join', { userId: driverId })
+    }
+
+    // Re-join user room on every (re)connect, including the very first one
     if (driverReconnectHandler) socket.off('connect', driverReconnectHandler)
     driverReconnectHandler = () => {
       socket.emit('join', { userId: driverId })
@@ -321,6 +331,7 @@ export const useDriverStore = defineStore('driver', () => {
     isOnline,
     loading,
     currentRide,
+    lastCompletedRide,
     rideStatus,
     arrivedAtPickup,
     driverLocation,

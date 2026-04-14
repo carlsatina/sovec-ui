@@ -356,7 +356,7 @@ async function confirmEndTrip() {
   const driverId = auth.user?.id
   if (!driverId) return
   await driver.completeTrip(driverId)
-  router.replace('/driver/home')
+  router.replace('/driver/completed')
 }
 
 // Keep legacy endTrip in case called elsewhere (now routes through confirm)
@@ -387,8 +387,8 @@ async function endTrip() {
 .trip-chip {
   position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
   background: rgba(7,21,36,0.8); backdrop-filter: blur(8px);
-  border: 1px solid rgba(0,196,188,0.25); border-radius: 999px;
-  padding: 8px 16px; font-size: 12px; font-weight: 700; color: #00c4bc;
+  border: 1px solid rgba(96,180,90,0.3); border-radius: 999px;
+  padding: 8px 16px; font-size: 12px; font-weight: 700; color: #60B45A;
   display: flex; align-items: center; gap: 6px; white-space: nowrap;
   box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 5;
 }
@@ -415,7 +415,7 @@ async function endTrip() {
 }
 .progress-bar-fill {
   height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, #00c4bc, #00908a);
+  background: linear-gradient(90deg, #60B45A, #3D7A38);
   transition: width 0.6s ease;
 }
 .progress-label {
@@ -433,11 +433,11 @@ async function endTrip() {
 .status-banner {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 14px; border-radius: 14px;
-  background: rgba(0,196,188,0.08); border: 1px solid rgba(0,196,188,0.2);
-  font-size: 13px; font-weight: 700; color: #007d78;
+  background: rgba(96,180,90,0.08); border: 1px solid rgba(96,180,90,0.22);
+  font-size: 13px; font-weight: 700; color: #3D7A38;
 }
 .status-dot {
-  width: 9px; height: 9px; border-radius: 50%; background: #00c4bc;
+  width: 9px; height: 9px; border-radius: 50%; background: #60B45A;
   animation: blink 1.4s ease-in-out infinite; flex-shrink: 0;
 }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -458,8 +458,8 @@ async function endTrip() {
 .p-info { flex: 1; min-width: 0; }
 .call-btn {
   width: 36px; height: 36px; border-radius: 10px;
-  background: rgba(0,196,188,0.15); border: 1px solid rgba(0,196,188,0.25);
-  color: #00c4bc; display: flex; align-items: center; justify-content: center;
+  background: rgba(96,180,90,0.15); border: 1px solid rgba(96,180,90,0.28);
+  color: #60B45A; display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; text-decoration: none;
 }
 .call-btn-disabled { opacity: 0.4; pointer-events: none; }
@@ -485,16 +485,16 @@ async function endTrip() {
 
 /* Task 8: Navigate button styled like link */
 .maps-link {
-  font-size: 14px; font-weight: 700; color: #00c4bc;
+  font-size: 14px; font-weight: 700; color: #60B45A;
   background: none; border: none; cursor: pointer; padding: 0; font-family: inherit;
 }
 
 .end-btn {
   height: 54px; border-radius: 999px; border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff; font-size: 16px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; box-shadow: 0 8px 24px rgba(0,196,188,0.4);
+  cursor: pointer; box-shadow: 0 8px 24px rgba(96,180,90,0.4);
   transition: opacity 0.15s, transform 0.12s;
 }
 .end-btn:active  { opacity: 0.9; transform: scale(0.98); }
@@ -526,7 +526,7 @@ async function endTrip() {
 }
 .modal-confirm {
   height: 48px; border-radius: 14px; border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff; font-size: 14px; font-weight: 700;
   cursor: pointer; font-family: inherit;
   display: flex; align-items: center; justify-content: center;

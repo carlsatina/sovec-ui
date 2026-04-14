@@ -37,6 +37,7 @@ const IncomingRide = () => import('../pages/driver/IncomingRide.vue')
 const NavigateToPickup = () => import('../pages/driver/NavigateToPickup.vue')
 const TripActive = () => import('../pages/driver/TripActive.vue')
 const DriverEarnings = () => import('../pages/driver/DriverEarnings.vue')
+const DriverTripCompleted = () => import('../pages/driver/DriverTripCompleted.vue')
 
 const DriverLanding = () => import('../pages/driver-apply/DriverLanding.vue')
 const DriverBenefits = () => import('../pages/driver-apply/DriverBenefits.vue')
@@ -101,7 +102,8 @@ const routes = [
   { path: '/driver/incoming', component: IncomingRide,      meta: { showTabs: false, requiresAuth: true, driverApp: true } },
   { path: '/driver/pickup',   component: NavigateToPickup,  meta: { showTabs: false, requiresAuth: true, driverApp: true } },
   { path: '/driver/trip',     component: TripActive,        meta: { showTabs: false, requiresAuth: true, driverApp: true } },
-  { path: '/driver/earnings', component: DriverEarnings,    meta: { showTabs: false, requiresAuth: true, driverApp: true } },
+  { path: '/driver/earnings',   component: DriverEarnings,       meta: { showTabs: false, requiresAuth: true, driverApp: true } },
+  { path: '/driver/completed',  component: DriverTripCompleted,  meta: { showTabs: false, requiresAuth: true, driverApp: true } },
 
   // ── Driver application flow ─────────────────────────────────────────────
   { path: '/driver/apply', component: DriverLanding, meta: { showTabs: false, requiresAuth: true } },

@@ -269,7 +269,7 @@ async function startTrip() {
   border-radius: 50%;
   border: none;
   background: #fff;
-  color: #00c4bc;
+  color: #3D7A38;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -297,10 +297,10 @@ async function startTrip() {
   top: 52px; left: 50%; transform: translateX(-50%);
   background: rgba(7,21,36,0.8);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(0,196,188,0.25);
+  border: 1px solid rgba(96,180,90,0.3);
   border-radius: 999px;
   padding: 8px 16px;
-  font-size: 12px; font-weight: 700; color: #00c4bc;
+  font-size: 12px; font-weight: 700; color: #60B45A;
   display: flex; align-items: center; gap: 6px;
   white-space: nowrap;
   box-shadow: 0 4px 16px rgba(0,0,0,0.25);
@@ -331,8 +331,8 @@ async function startTrip() {
 
 .p-avatar {
   width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(0,196,188,0.15);
-  border: 1.5px solid rgba(0,196,188,0.25);
+  background: rgba(96,180,90,0.15);
+  border: 1.5px solid rgba(96,180,90,0.28);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
@@ -343,9 +343,9 @@ async function startTrip() {
 
 .call-btn {
   width: 40px; height: 40px; border-radius: 12px;
-  background: rgba(0,196,188,0.15);
-  border: 1px solid rgba(0,196,188,0.25);
-  color: #00c4bc;
+  background: rgba(96,180,90,0.15);
+  border: 1px solid rgba(96,180,90,0.28);
+  color: #60B45A;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   text-decoration: none;
 }
@@ -363,7 +363,7 @@ async function startTrip() {
 }
 
 .addr-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.dot-teal { background: #00c4bc; box-shadow: 0 0 0 4px rgba(0,196,188,0.15); }
+.dot-teal { background: #60B45A; box-shadow: 0 0 0 4px rgba(96,180,90,0.18); }
 .addr-label { font-size: 10px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
 .addr-title { font-size: 15px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .addr-sub   { font-size: 12px; color: #6b7280; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -383,10 +383,10 @@ async function startTrip() {
 
 .arrived-btn {
   height: 52px; border-radius: 999px; border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff; font-size: 15px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; box-shadow: 0 8px 24px rgba(0,196,188,0.35);
+  cursor: pointer; box-shadow: 0 8px 24px rgba(96,180,90,0.35);
   transition: opacity 0.15s, transform 0.12s;
 }
 
@@ -397,17 +397,17 @@ async function startTrip() {
 
 .arrived-badge {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(0,196,188,0.08); border: 1px solid rgba(0,196,188,0.25);
+  background: rgba(96,180,90,0.08); border: 1px solid rgba(96,180,90,0.25);
   border-radius: 14px; padding: 12px 16px;
-  font-size: 13px; font-weight: 600; color: #007d78;
+  font-size: 13px; font-weight: 600; color: #3D7A38;
 }
 
 .start-btn {
   height: 54px; border-radius: 999px; border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff; font-size: 16px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; box-shadow: 0 8px 24px rgba(0,196,188,0.4);
+  cursor: pointer; box-shadow: 0 8px 24px rgba(96,180,90,0.4);
   transition: opacity 0.15s, transform 0.12s;
 }
 

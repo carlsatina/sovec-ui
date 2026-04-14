@@ -6,10 +6,10 @@
       <!-- Animated checkmark -->
       <div class="check-wrap" aria-hidden="true">
         <svg class="check-svg" viewBox="0 0 80 80" fill="none">
-          <circle cx="40" cy="40" r="36" stroke="rgba(0,196,188,0.2)" stroke-width="2"/>
+          <circle cx="40" cy="40" r="36" stroke="rgba(96,180,90,0.2)" stroke-width="2"/>
           <circle
             cx="40" cy="40" r="36"
-            stroke="#00c4bc" stroke-width="3"
+            stroke="#60B45A" stroke-width="3"
             stroke-linecap="round"
             stroke-dasharray="226"
             stroke-dashoffset="0"
@@ -17,7 +17,7 @@
           />
           <polyline
             points="24,40 35,51 56,30"
-            stroke="#00c4bc" stroke-width="3.5"
+            stroke="#60B45A" stroke-width="3.5"
             stroke-linecap="round" stroke-linejoin="round"
             class="check-mark"
           />
@@ -72,7 +72,7 @@
 
       <!-- EV impact badge -->
       <div class="ev-badge">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="#00c4bc" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#60B45A" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22L20.5 10.5H14L13 2Z"/></svg>
         <span>You saved <strong>~{{ co2Display }} kg CO₂</strong> by choosing an EV</span>
       </div>
 
@@ -190,8 +190,8 @@ function goHome() {
   align-items: flex-start;
   gap: 5px;
   margin-top: 4px;
-  background: rgba(0,196,188,0.12);
-  border: 1px solid rgba(0,196,188,0.25);
+  background: rgba(96,180,90,0.12);
+  border: 1px solid rgba(96,180,90,0.25);
   border-radius: 999px;
   padding: 8px 20px;
 }
@@ -244,7 +244,7 @@ function goHome() {
   flex-shrink: 0;
 }
 
-.teal-icon   { background: rgba(0,196,188,0.1);  color: #00c4bc; }
+.teal-icon   { background: rgba(96,180,90,0.1);  color: #60B45A; }
 .gold-icon   { background: rgba(245,166,35,0.1);  color: #f5a623; }
 .purple-icon { background: rgba(139,92,246,0.1);  color: #8b5cf6; }
 
@@ -260,11 +260,11 @@ function goHome() {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(0,196,188,0.07);
-  border: 1px solid rgba(0,196,188,0.2);
+  background: rgba(96,180,90,0.07);
+  border: 1px solid rgba(96,180,90,0.2);
   border-radius: 14px;
   font-size: 13px;
-  color: #007d78;
+  color: #3D7A38;
   line-height: 1.4;
 }
 
@@ -275,7 +275,7 @@ function goHome() {
   height: 54px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(145deg, #00c4bc, #00908a);
+  background: linear-gradient(145deg, #60B45A, #3D7A38);
   color: #fff;
   font-size: 16px;
   font-weight: 800;
@@ -284,7 +284,7 @@ function goHome() {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,196,188,0.35);
+  box-shadow: 0 8px 24px rgba(96,180,90,0.35);
   transition: opacity 0.15s, transform 0.12s;
 }
 
