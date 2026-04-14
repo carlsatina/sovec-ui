@@ -34,6 +34,9 @@
       <div class="status-banner">
         <div class="status-dot" aria-hidden="true"></div>
         <span>Trip in progress</span>
+        <button class="share-icon-btn" type="button" aria-label="Share trip status">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
       </div>
 
       <!-- Task 5: Trip progress bar -->
@@ -357,6 +360,21 @@ onUnmounted(() => {
   background: #60B45A;
   flex-shrink: 0;
   animation: blink 1.4s ease-in-out infinite;
+}
+
+.share-icon-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(96,180,90,0.3);
+  background: rgba(96,180,90,0.1);
+  color: #3D7A38;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 @keyframes blink {
