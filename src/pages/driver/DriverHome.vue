@@ -41,6 +41,12 @@
       </button>
     </div>
 
+    <!-- ── Location error ── -->
+    <div v-if="locationError" class="location-error">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {{ locationError }}
+    </div>
+
     <!-- ── Map (visible when online) ── -->
     <div v-if="driver.isOnline" class="map-wrap">
       <NativeMap
@@ -141,6 +147,7 @@
 import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { Geolocation } from '@capacitor/geolocation'
 import NativeMap from '../../components/NativeMap.vue'
 import IncomingRideOverlay from './IncomingRide.vue'
 import { useDriverStore } from '../../store/driver'
@@ -152,6 +159,7 @@ const driver = useDriverStore()
 const auth = useAuthStore()
 
 const locating = ref(false)
+const locationError = ref('')
 const todayEarnings = ref(0)
 const todayTrips = ref(0)
 const todayHours = ref(0)
@@ -172,25 +180,34 @@ async function toggleOnline() {
   if (!driverId) return
 
   if (driver.isOnline) {
+    locationError.value = ''
     await driver.goOffline(driverId)
     return
   }
 
   locating.value = true
+  locationError.value = ''
   try {
-    await new Promise<void>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          await driver.goOnline(driverId, pos.coords.latitude, pos.coords.longitude)
-          resolve()
-        },
-        reject,
-        { timeout: 8000 }
-      )
+    const permission = await Geolocation.requestPermissions()
+    if (permission.location === 'denied') {
+      locationError.value = 'Location access is required to go online. Please enable it in your device settings.'
+      return
+    }
+
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
     })
-  } catch {
-    // GPS unavailable — go online with default location
-    await driver.goOnline(driverId, 14.5995, 120.9842)
+
+    await driver.goOnline(driverId, position.coords.latitude, position.coords.longitude)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.toLowerCase().includes('denied')) {
+      locationError.value = 'Location access is required to go online. Please enable it in your device settings.'
+    } else {
+      locationError.value = 'Could not get your location. Make sure GPS is enabled and try again.'
+    }
   } finally {
     locating.value = false
   }
@@ -379,6 +396,27 @@ onBeforeUnmount(() => {
 
 .toggle-btn.active .toggle-knob {
   transform: translateX(26px);
+}
+
+/* ── Location error ── */
+.location-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 16px 0;
+  padding: 12px 14px;
+  background: #FEF2F2;
+  border: 1.5px solid rgba(239,68,68,0.25);
+  border-radius: 14px;
+  font-size: 13px;
+  color: #B91C1C;
+  line-height: 1.5;
+}
+
+.location-error svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #EF4444;
 }
 
 /* ── Map ── */

@@ -9,7 +9,7 @@
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
-        :map-bearing="driverBearing"
+        :map-bearing="routeBearing"
         :tilt="30"
         map-id="driver-trip-map"
         @camera-idle="onCameraIdle"
@@ -147,7 +147,7 @@ import { useAuthStore } from '../../store/auth'
 import { api } from '../../services/api'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
-import { snapToPolyline, lookAheadCenter } from '../../utils/gpsSmoothing'
+import { snapToPolyline, lookAheadCenter, routeForwardBearing } from '../../utils/gpsSmoothing'
 import { getSocket } from '../../services/socket'
 
 const router = useRouter()
@@ -161,8 +161,9 @@ const totalDistanceKm  = ref(0)       // set on first successful route fetch
 const carMarkerIcon    = 'https://maps.gstatic.com/mapfiles/ms2/micons/cabs.png'
 
 // Navigation mode
-const isFollowing       = ref(true)
-const driverBearing     = ref(0)
+const isFollowing        = ref(true)
+const driverBearing      = ref(0)   // GPS movement direction — used for car icon rotation only
+const routeBearing       = ref(0)   // Forward direction along route — used for camera heading
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
 
 // Task 1: arrival detection (~80 m = 0.00072 °)
@@ -192,8 +193,7 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
   const driverPos = driver.driverLocation
   if (!driverPos) return
-  // Compare against the expected look-ahead center, not the raw driver position
-  const expected = lookAheadCenter(driverPos, driverBearing.value, 100)
+  const expected = lookAheadCenter(driverPos, routeBearing.value, 100)
   const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
@@ -205,6 +205,10 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null) {
     if (dist > 0.00005) driverBearing.value = computeBearing(prevDriverLocation.value, newLoc)
   }
   prevDriverLocation.value = { ...newLoc }
+  // Update route-forward bearing whenever the driver moves
+  if (routePath.value.length >= 2) {
+    routeBearing.value = routeForwardBearing(newLoc, routePath.value)
+  }
 }
 
 // Task 1: check if driver is within arrival threshold of dropoff
@@ -220,7 +224,7 @@ function checkArrival() {
 const mapCenter = computed(() => {
   const pos = driver.driverLocation
   if (!pos) return driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 }
-  return lookAheadCenter(pos, driverBearing.value, 100)
+  return lookAheadCenter(pos, routeBearing.value, 100)
 })
 
 const mapMarkers = computed(() => {
@@ -314,6 +318,14 @@ watch(() => driver.driverLocation, (newLoc) => {
   updateDriverBearing(newLoc)
   checkArrival()           // Task 1
   fetchLiveTripMetrics()
+})
+
+// Recompute route bearing when the polyline is refreshed (route recalculated)
+watch(routePath, (path) => {
+  const pos = driver.driverLocation
+  if (pos && path.length >= 2) {
+    routeBearing.value = routeForwardBearing(pos, path)
+  }
 })
 
 // Task 3: socket reconnection — re-join ride room after disconnect

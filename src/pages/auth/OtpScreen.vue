@@ -5,7 +5,18 @@
       <template #subtitle>We sent a 6-digit code to your phone</template>
     </AppHeader>
     <div class="otp-row">
-      <input v-for="i in 6" :key="i" v-model="digits[i - 1]" class="input" maxlength="1" />
+      <input
+        v-for="i in 6"
+        :key="i"
+        :ref="el => { if (el) inputRefs[i - 1] = el as HTMLInputElement }"
+        :value="digits[i - 1]"
+        class="input"
+        maxlength="1"
+        inputmode="numeric"
+        @input="onInput(i - 1, $event)"
+        @keydown="onKeydown(i - 1, $event)"
+        @paste="onPaste"
+      />
     </div>
     <button class="button button-primary" :disabled="auth.loading || !isComplete" @click="handleVerify">Verify</button>
     <p v-if="error" class="text-error">{{ error }}</p>
@@ -23,8 +34,35 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const digits = ref<string[]>(['', '', '', '', '', ''])
+const inputRefs = ref<HTMLInputElement[]>([])
 const error = ref('')
 const isComplete = computed(() => digits.value.join('').length === 6)
+
+function onInput(index: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const val = input.value.replace(/\D/g, '').slice(-1)
+  digits.value[index] = val
+  input.value = val
+  if (val && index < 5) {
+    inputRefs.value[index + 1]?.focus()
+  }
+}
+
+function onKeydown(index: number, event: KeyboardEvent) {
+  if (event.key === 'Backspace' && !digits.value[index] && index > 0) {
+    digits.value[index - 1] = ''
+    inputRefs.value[index - 1]?.focus()
+  }
+}
+
+function onPaste(event: ClipboardEvent) {
+  event.preventDefault()
+  const text = event.clipboardData?.getData('text') ?? ''
+  const nums = text.replace(/\D/g, '').slice(0, 6).split('')
+  nums.forEach((n, i) => { digits.value[i] = n })
+  const nextEmpty = nums.length < 6 ? nums.length : 5
+  inputRefs.value[nextEmpty]?.focus()
+}
 
 async function handleVerify() {
   const phone = String(route.query.phone ?? '')
