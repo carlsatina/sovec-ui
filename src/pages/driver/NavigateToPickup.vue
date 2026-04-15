@@ -9,7 +9,7 @@
         :path="routePath"
         :follow-driver="isFollowing"
         :map-bearing="driverBearing"
-        :tilt="30"
+        :tilt="45"
         :padding-bottom="280"
         map-id="driver-pickup-map"
         @camera-idle="onCameraIdle"

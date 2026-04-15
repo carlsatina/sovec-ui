@@ -10,7 +10,7 @@
         :path="routePath"
         :follow-driver="isFollowing"
         :map-bearing="routeBearing"
-        :tilt="30"
+        :tilt="45"
         :padding-bottom="400"
         map-id="driver-trip-map"
         @camera-idle="onCameraIdle"
