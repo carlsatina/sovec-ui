@@ -9,7 +9,7 @@
         :markers="mapMarkers"
         :path="routePath"
         :follow-driver="isFollowing"
-        :map-bearing="driverBearing"
+        :map-bearing="routeBearing"
         :tilt="30"
         map-id="trip-progress-map"
         @camera-idle="onCameraIdle"
@@ -88,7 +88,7 @@ import { api } from '../../services/api'
 import { getSocket } from '../../services/socket'
 import { decodePolyline } from '../../utils/polyline'
 import { computeBearing } from '../../utils/mapIcons'
-import { snapToPolyline, lookAheadCenter } from '../../utils/gpsSmoothing'
+import { snapToPolyline, lookAheadCenter, routeForwardBearing } from '../../utils/gpsSmoothing'
 
 const router = useRouter()
 const booking = useBookingStore()
@@ -101,7 +101,8 @@ const totalDistanceKm  = ref(0)                      // Task 5: for progress bar
 
 // Navigation mode
 const isFollowing        = ref(true)
-const driverBearing      = ref(0)
+const driverBearing      = ref(0)   // GPS movement direction — used for car icon rotation only
+const routeBearing       = ref(0)   // Forward direction along route — used for camera heading
 const prevDriverLocation = ref<{ lat: number; lng: number } | null>(null)
 
 // Task 6: screen wake lock
@@ -119,7 +120,7 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
   if (!isFollowing.value) return
   const driverPos = booking.driverLocation
   if (!driverPos) return
-  const expected = lookAheadCenter(driverPos, driverBearing.value, 100)
+  const expected = lookAheadCenter(driverPos, routeBearing.value, 100)
   const dist = Math.hypot(coords.lat - expected.lat, coords.lng - expected.lng)
   if (dist > 0.005) isFollowing.value = false
 }
@@ -127,7 +128,7 @@ function onCameraIdle(coords: { lat: number; lng: number }) {
 const mapCenter = computed(() => {
   const pos = booking.driverLocation
   if (!pos) return booking.dropoff ? { lat: booking.dropoff.lat, lng: booking.dropoff.lng } : { lat: 14.5995, lng: 120.9842 }
-  return lookAheadCenter(pos, driverBearing.value, 100)
+  return lookAheadCenter(pos, routeBearing.value, 100)
 })
 
 const mapMarkers = computed(() => {
@@ -166,6 +167,10 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null | undef
     }
   }
   prevDriverLocation.value = { ...newLoc }
+  // Update route-forward bearing whenever the driver moves
+  if (routePath.value.length >= 2) {
+    routeBearing.value = routeForwardBearing(newLoc, routePath.value)
+  }
 }
 
 const etaText        = computed(() => etaDurationMin.value != null ? `~${etaDurationMin.value} min` : null)
@@ -227,6 +232,14 @@ async function fetchRoute() {
 watch(() => booking.driverLocation, (newLoc) => {
   updateDriverBearing(newLoc)
   fetchRoute()
+})
+
+// Recompute route bearing when the polyline is refreshed (route recalculated)
+watch(routePath, (path) => {
+  const pos = booking.driverLocation
+  if (pos && path.length >= 2) {
+    routeBearing.value = routeForwardBearing(pos, path)
+  }
 })
 
 onMounted(() => {
