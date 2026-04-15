@@ -33,6 +33,7 @@ const props = withDefaults(
     followDriver?: boolean  // lock camera to center, skipping fitBounds
     mapBearing?: number     // map heading in degrees (0 = north up); used in navigation mode
     tilt?: number           // camera tilt in degrees 0-67.5; used in navigation mode
+    paddingBottom?: number  // pixels of overlay (e.g. bottom sheet) to exclude from fitBounds
   }>(),
   {
     mapId: 'solvec-map',
@@ -42,7 +43,8 @@ const props = withDefaults(
     interactive: true,
     followDriver: false,
     mapBearing: 0,
-    tilt: 0
+    tilt: 0,
+    paddingBottom: 0
   }
 )
 
@@ -181,10 +183,22 @@ async function moveCameraToData() {
   const minLng = Math.min(...lngs)
   const maxLng = Math.max(...lngs)
 
+  // Extend the north bound to mirror the bottom-sheet offset so that fitBounds
+  // centres the visible content above the overlay rather than behind it.
+  // We do this by adding an equal amount of latitude to the north as the sheet
+  // covers as a fraction of the total lat span (approximation, sufficient for
+  // the small distances involved in a ride pickup/dropoff view).
+  const latSpan = maxLat - minLat
+  const lngSpan = maxLng - minLng
+  // Use a conservative 500 px as the assumed map height when we have no pixel info.
+  const sheetFraction = props.paddingBottom > 0 ? props.paddingBottom / 500 : 0
+  const adjustedMaxLat = maxLat + latSpan * sheetFraction
+  const adjustedMaxLng = maxLng + lngSpan * sheetFraction
+
   const bounds = new LatLngBounds({
     southwest: { lat: minLat, lng: minLng },
-    center: { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 },
-    northeast: { lat: maxLat, lng: maxLng }
+    center: { lat: (minLat + adjustedMaxLat) / 2, lng: (minLng + adjustedMaxLng) / 2 },
+    northeast: { lat: adjustedMaxLat, lng: adjustedMaxLng }
   })
 
   await map.value.fitBounds(bounds, 90)
@@ -325,7 +339,13 @@ function updateWebCamera() {
 
   const bounds = new g.LatLngBounds()
   points.forEach((p) => bounds.extend(p))
-  webMap.value.fitBounds(bounds)
+  const edgePad = 60
+  webMap.value.fitBounds(bounds, {
+    top: edgePad,
+    left: edgePad,
+    right: edgePad,
+    bottom: edgePad + props.paddingBottom
+  })
 }
 
 // --- Lifecycle ---

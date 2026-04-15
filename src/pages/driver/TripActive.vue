@@ -11,6 +11,7 @@
         :follow-driver="isFollowing"
         :map-bearing="routeBearing"
         :tilt="30"
+        :padding-bottom="400"
         map-id="driver-trip-map"
         @camera-idle="onCameraIdle"
       />
@@ -224,7 +225,9 @@ function checkArrival() {
 const mapCenter = computed(() => {
   const pos = driver.driverLocation
   if (!pos) return driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 }
-  return lookAheadCenter(pos, routeBearing.value, 100)
+  // 75 m: zoom-18 corrected look-ahead (300 m was designed for zoom 16, which is 4× less zoomed).
+  // Keeps the driver marker in the visible map area above the bottom sheet.
+  return lookAheadCenter(pos, routeBearing.value, 75)
 })
 
 const mapMarkers = computed(() => {

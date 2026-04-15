@@ -10,6 +10,7 @@
         :follow-driver="isFollowing"
         :map-bearing="driverBearing"
         :tilt="30"
+        :padding-bottom="280"
         map-id="driver-pickup-map"
         @camera-idle="onCameraIdle"
       />
@@ -133,7 +134,9 @@ function updateDriverBearing(newLoc: { lat: number; lng: number } | null) {
 const mapCenter = computed(() => {
   const pos = driver.driverLocation
   if (!pos) return driver.currentRide ? { lat: driver.currentRide.pickupLat, lng: driver.currentRide.pickupLng } : { lat: 14.5995, lng: 120.9842 }
-  return lookAheadCenter(pos, driverBearing.value)
+  // 75 m: zoom-18 equivalent of the 300 m default (which targets zoom 16, 4× less zoomed).
+  // Keeps the driver marker visible above the bottom sheet at this zoom level.
+  return lookAheadCenter(pos, driverBearing.value, 75)
 })
 
 const mapMarkers = computed(() => {
